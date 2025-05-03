@@ -1,0 +1,2 @@
+ALTER TABLE livros
+DROP COLUMN IF EXISTS editora;

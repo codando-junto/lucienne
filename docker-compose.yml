@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_container
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: biblioteca
+    restart: always
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: go_app_container
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: biblioteca
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_SSLMODE: disable
+    ports:
+      - "9090:9090"
+    depends_on:
+      - postgres
+    restart: always
