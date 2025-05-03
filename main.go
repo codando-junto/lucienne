@@ -17,9 +17,6 @@ func main() {
 	}
 
 	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
 
 	r := mux.NewRouter()
 	r.HandleFunc("/health", HealthHandler).Methods("GET")
@@ -31,4 +28,18 @@ func main() {
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
+}
+
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Erro ao carregar o arquivo .env")
+	}
+
+	requiredEnvVars := []string{"PORT"}
+	for _, envVar := range requiredEnvVars {
+		if os.Getenv(envVar) == "" {
+			log.Fatalf("A variável de ambiente %s não está definida", envVar)
+		}
+	}
 }
