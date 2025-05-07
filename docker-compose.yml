@@ -7,20 +7,19 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: biblioteca
     restart: always
+    ports:
+      - "5432:5432"
   app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: go_app_container
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: biblioteca
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_SSLMODE: disable
+    volumes:
+      - ./:/app 
+    env_file: .env
     ports:
       - "9090:9090"
     depends_on:
-      - postgres
+      - postgres 
     restart: always
+    command:  ["/app/cmd/start.sh"]
