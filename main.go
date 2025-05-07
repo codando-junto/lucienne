@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/Codando-Junto/ong_da_laiz/database"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -15,8 +14,6 @@ import (
 )
 
 func main() {
-	database.ConnectDB()
-
 	port := os.Getenv("APP_PORT")
 	if port == "" {
 		port = "9090"
@@ -26,7 +23,7 @@ func main() {
 	r.HandleFunc("/health", HealthHandler).Methods("GET")
 	r.HandleFunc("/", HealthHandler).Methods("GET")
 
-	fmt.Println("Servidor rodando na porta", port)
+	log.Println("Rodando na porta: " + port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
 
@@ -36,8 +33,9 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func init() {
-	if err := godotenv.Load(); err != nil {
-		log.Println("Erro ao carregar o arquivo .env")
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Erro ao carregar o arquivo .env")
 	}
 
 	dbURL := os.Getenv("DATABASE_URL")
