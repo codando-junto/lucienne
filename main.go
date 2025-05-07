@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +11,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -21,11 +23,10 @@ func main() {
 	}
 
 	r := mux.NewRouter()
+	r.HandleFunc("/health", HealthHandler).Methods("GET")
+	r.HandleFunc("/", HealthHandler).Methods("GET")
 
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("API | teste!"))
-	}).Methods("GET")
-	log.Println("Rodando em http://localhost:" + port)
+	fmt.Println("Servidor rodando na porta", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
 
@@ -35,7 +36,12 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("Erro ao carregar o arquivo .env")
+	}
+
 	dbURL := os.Getenv("DATABASE_URL")
+	fmt.Println(dbURL)
 	if dbURL == "" {
 		dbURL = "postgres://postgres:postgres@postgres:5432/biblioteca?sslmode=disable"
 	}
