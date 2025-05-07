@@ -21,7 +21,6 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/health", HealthHandler).Methods("GET")
-	r.HandleFunc("/", HealthHandler).Methods("GET")
 
 	log.Println("Rodando na porta: " + port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
