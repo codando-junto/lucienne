@@ -1,0 +1,23 @@
+# .air.toml
+
+# Caminho base do projeto
+root = "."
+
+# Diretório temporário para build
+tmp_dir = "tmp"
+
+[build]
+  # Comando de build que será executado no container
+  cmd = "go build -o ./tmp/main main.go"
+  bin = "tmp/main"         # Caminho do binário gerado
+  delay = 1000             # Espera 1s após mudança
+  exclude_dir = ["tmp", "vendor"]
+  include_ext = ["go"]
+  log = "build-errors.log"
+
+[log]
+  color = "auto"
+  timestamp = false
+
+[misc]
+  clean_on_exit = true
