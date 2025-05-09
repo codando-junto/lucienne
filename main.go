@@ -14,8 +14,7 @@ import (
 )
 
 func main() {
-
-	port := os.Getenv("PORT")
+	port := os.Getenv("APP_PORT")
 	if port == "" {
 		port = "9090"
 	}
@@ -23,7 +22,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/health", HealthHandler).Methods("GET")
 
-	fmt.Println("Servidor rodando na porta: ", port)
+	log.Println("Rodando na porta: " + port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
 
@@ -39,6 +38,7 @@ func init() {
 	}
 
 	dbURL := os.Getenv("DATABASE_URL")
+	fmt.Println(dbURL)
 	if dbURL == "" {
 		dbURL = "postgres://postgres:postgres@postgres:5432/biblioteca?sslmode=disable"
 	}
