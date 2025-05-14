@@ -1,3 +1,8 @@
+# luciene
+O nome é em homenagem a bibliotecária do Reino do Sonhar, responsável por organizar todos os livros já sonhados, é uma figura central e respeitada no universo de Neil Gaiman.
+
+Essa API será responsável gerenciar biblioteca de livros.
+
 ## Pré-requisitos
 
 Certifique-se de ter o seguinte instalado em sua máquina:
