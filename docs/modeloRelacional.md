@@ -1,41 +1,44 @@
 ```mermaid
 erDiagram
     USUARIOS {
-        integer id
-        varchar(100) nome
-        varchar(255) email
-        varchar(100) senha
-    }
-
-    LIVROS {
-        integer id
-        varchar(30) isbn
-        varchar(100) nome
-        integer edicao
-        integer reimpressao
-        integer preco_em_centavos
-        datetime data_de_lancamento
+        id INTEGER "PK"
+        email VARCHAR(255) "UNIQUE, NOT NULL"
+        nome VARCHAR(100) "NOT NULL"
+        senha VARCHAR(100) "NOT NULL"
     }
 
     CATEGORIAS {
-        id integer
-        nome varchar(100)
+        id INTEGER "PK"
+        nome VARCHAR(100) "NOT NULL"
     }
 
     AUTORES {
-        id integer
-        nome varchar(100)
+        id INTEGER "PK"
+        nome VARCHAR(100) "NOT NULL"
     }
 
     EDITORAS {
-        id integer
-        nome varchar(100)
+        id INTEGER "PK"
+        nome VARCHAR(100) "NOT NULL"
+    }
+
+    LIVROS {
+        id INTEGER "PK"
+        isbn VARCHAR(30) "UNIQUE, NOT NULL"
+        nome VARCHAR(100) "NOT NULL"
+        edicao INTEGER "NOT NULL"
+        reimpressao INTEGER
+        preco_em_centavos INTEGER "NOT NULL"
+        data_de_lancamento DATETIME "NOT NULL"
+        categoria_id INTEGER "FK, NOT NULL"
+        autor_id INTEGER "FK, NOT NULL"
+        editora_id INTEGER "FK, NOT NULL"
     }
     
     PEDIDOS {
-        id integer
-        numero integer
-
+        id INTEGER "PK"
+        numero INTEGER "UNIQUE, NOT NULL"
+        user_id INTEGER "FK, NOT NULL"
     }
 
     LIVROS }o--|| AUTORES : ""
@@ -43,5 +46,7 @@ erDiagram
     LIVROS }o--|| EDITORAS : ""
 
     LIVROS }o--|| CATEGORIAS : ""
+
+    PEDIDOS }o--|| USUARIOS : ""
 
 ```
