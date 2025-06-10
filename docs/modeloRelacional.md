@@ -38,7 +38,23 @@ erDiagram
     PEDIDOS {
         id INTEGER "PK"
         numero INTEGER "UNIQUE, NOT NULL"
+        status VARCHAR(20) "NOT NULL"
+        link_de_rastreio VARCHAR(100) "NOT NULL"
         user_id INTEGER "FK, NOT NULL"
+        
+    }
+
+    ITENS_DE_PEDIDO {
+        id INTEGER "PK"
+        subtotal_em_centavos INTEGER "NOT NULL"
+        desconto_em_centavos INTEGER "DEFAULT 0"
+        livro_id INTEGER "FK, NOT NULL"
+        pedido_id INTEGER "FK, NOT NULL"
+    }
+
+    PAGAMENTOS {
+        id INTEGER "PK"
+        pedido_id INTEGER "FK, NOT NULL"
     }
 
     LIVROS }o--|| AUTORES : ""
@@ -48,5 +64,11 @@ erDiagram
     LIVROS }o--|| CATEGORIAS : ""
 
     PEDIDOS }o--|| USUARIOS : ""
+
+    ITENS_DE_PEDIDO }o--|| PEDIDOS : ""
+
+    ITENS_DE_PEDIDO }|--|| LIVROS : ""
+
+    PAGAMENTOS }o--|| PEDIDOS : ""
 
 ```
