@@ -71,4 +71,31 @@ func init() {
 		log.Fatalf("Erro ao obter versão das migrações: %v", err)
 	}
 	log.Printf("Versão atual do banco de dados: %d, Dirty: %v", version, dirty)
+
+	env := os.Getenv("ENV")
+	if env == "" {
+		env = "dev"
+	}
+
+	if env == "dev" {
+		log.Println("Ambiente de desenvolvimento detectado. Aplicando seed...")
+		seed, err := migrate.New(
+			migrationsPath,
+			dbURL)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		log.Println("Iniciando seed...")
+		if err := seed.Up(); err != nil {
+			if err == migrate.ErrNoChange {
+				log.Println("Nenhum seed pendente. Banco de dados já está atualizado.")
+			} else {
+				log.Fatalf("Erro ao aplicar migrações: %v", err)
+			}
+		} else {
+			log.Println("Seed aplicadas com sucesso.")
+		}
+	}
+
 }
