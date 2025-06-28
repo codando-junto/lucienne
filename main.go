@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/Codando-Junto/ong_da_laiz/database"
 	"github.com/Codando-Junto/ong_da_laiz/internal/handlers"
+	"github.com/Codando-Junto/ong_da_laiz/internal/infra/database
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
