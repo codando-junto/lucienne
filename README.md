@@ -51,3 +51,21 @@ Descrição: Retorna o status de saúde da aplicação.
 Exemplo de resposta:
 Código de status: 200 OK
 Corpo da resposta: vazio
+
+## 5. Estrutura de diretórios da aplicação
+Nós entendemos que o Go, juntamente com a comunidade, não são opinativos quanto a estrutura de diretórios a seguir. Então, compilamos uma estrutura inicial e com o tempo e conforme a aplicação
+e o time forem amadurecendo, ela crescerá junto. Mas atualmente temos:
+```  
+  |- cmd: pasta de comandos
+  |- db: pasta raiz para scripts de banco
+      |- migrations: pasta com as migrações do banco
+  |- internal: pasta de código da aplicação
+      |- domain: código dos recursos de domínio
+      |- handlers: endpoints da aplicação
+      |- infra: recursos de infraestrutura (chamadas externas à aplicação)
+          |- database: conexão com o banco
+          |- rendering: ferramenta de renderização de páginas
+          |- repository: pasta para as queries de banco de dados
+      |- views: pasta com as páginas HTML para renderização
+  |- test: diretório para os testes, ele seguirá a mesma estrutura que a pasta internal de forma proposital para fácil identificação
+```
