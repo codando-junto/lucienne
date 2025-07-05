@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/Codando-Junto/ong_da_laiz/internal/handlers"
-	"github.com/Codando-Junto/ong_da_laiz/internal/infra/database
+	"github.com/Codando-Junto/ong_da_laiz/internal/infra/database"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -24,7 +24,7 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/health", HealthHandler).Methods("GET")
-	r.HandleFunc("/authors/{id}", handlers.UpdateAuthor).Methods("PATCH")
+	handlers.DefineAuthors(r)
 
 	log.Println("Rodando na porta: " + port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
