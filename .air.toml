@@ -11,7 +11,8 @@ tmp_dir = "tmp"
   cmd = "go build -o ./tmp/main main.go"
   bin = "tmp/main"         # Caminho do binário gerado
   delay = 1000             # Espera 1s após mudança
-  exclude_dir = ["tmp", "vendor"]
+  exclude_dir = ["assets", "tmp", "vendor", "node_modules"]
+  include_file = ["dist/build.json"]
   include_ext = ["go"]
   log = "build-errors.log"
 
