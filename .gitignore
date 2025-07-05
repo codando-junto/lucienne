@@ -1,3 +1,5 @@
 # Ignorar arquivos
 .env
 tmp
+node_modules
+dist
