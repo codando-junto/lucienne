@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"lucienne/config"
 	"net/http"
+	"os"
 
 	"lucienne/internal/handlers"
 	"lucienne/internal/infra/database"
@@ -16,21 +16,21 @@ import (
 	"github.com/gorilla/mux"
 )
 
-
-func main() {
-  const (
+const (
 	MIGRATIONS_PATH = "file://db/migrations"
 	SEEDS_PATH      = "file://db/seeds"
 )
- 
+
+func main() {
+
 	database.ConnectDB()
 	defer database.Conn.Close(context.Background())
 
 	port := os.Getenv("APP_PORT")
 	if port == "" {
 		port = "9090"
-  
-    
+	}
+
 	r := mux.NewRouter()
 
 	r.HandleFunc("/health", HealthHandler).Methods("GET")

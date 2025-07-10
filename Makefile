@@ -1,6 +1,8 @@
 .PHONY: dev down logs ps restart
 
 dev:
+	docker compose stop
+	docker compose rm -f
 	docker compose up --build
 
 down:
