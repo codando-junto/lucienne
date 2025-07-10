@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
 	"log"
 	"lucienne/config"
 	"net/http"
+	"os"
+
+	"lucienne/internal/handlers"
+	"lucienne/internal/infra/database"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -17,9 +22,19 @@ const (
 )
 
 func main() {
+
+	database.ConnectDB()
+	defer database.Conn.Close(context.Background())
+
+	port := os.Getenv("APP_PORT")
+	if port == "" {
+		port = "9090"
+	}
+
 	r := mux.NewRouter()
 
 	r.HandleFunc("/health", HealthHandler).Methods("GET")
+	r.HandleFunc("/authors", handlers.CreateAuthorHandler).Methods("POST")
 
 	log.Println("Rodando na porta: " + config.EnvVariables.AppPort)
 	log.Fatal(http.ListenAndServe(":"+config.EnvVariables.AppPort, r))
