@@ -1,0 +1,9 @@
+{
+  "type": "module",
+  "devDependencies": {
+    "esbuild": "0.25.4",
+    "chokidar": "^4.0.3",
+    "dotenv": "^17.0.0",
+    "esbuild-sass-plugin": "^3.3.1"
+  }
+}
