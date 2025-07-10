@@ -1,29 +1,28 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"lucienne/config"
 	"net/http"
-	"os"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
+)
+
+const (
+	MIGRATIONS_PATH = "file://db/migrations"
+	SEEDS_PATH      = "file://db/seeds"
 )
 
 func main() {
-	port := os.Getenv("APP_PORT")
-	if port == "" {
-		port = "9090"
-	}
-
 	r := mux.NewRouter()
+
 	r.HandleFunc("/health", HealthHandler).Methods("GET")
 
-	log.Println("Rodando na porta: " + port)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	log.Println("Rodando na porta: " + config.EnvVariables.AppPort)
+	log.Fatal(http.ListenAndServe(":"+config.EnvVariables.AppPort, r))
 }
 
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
@@ -32,24 +31,12 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func init() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Erro ao carregar o arquivo .env")
-	}
+	config.EnvVariables.Load()
 
-	dbURL := os.Getenv("DATABASE_URL")
-	fmt.Println(dbURL)
-	if dbURL == "" {
-		dbURL = "postgres://postgres:postgres@postgres:5432/biblioteca?sslmode=disable"
-	}
-
-	migrationsPath := os.Getenv("MIGRATIONS_PATH")
-	if migrationsPath == "" {
-		migrationsPath = "file://db/migrations"
-	}
 	m, err := migrate.New(
-		migrationsPath,
-		dbURL)
+		MIGRATIONS_PATH,
+		config.EnvVariables.DatabaseURL,
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -72,16 +59,11 @@ func init() {
 	}
 	log.Printf("Versão atual do banco de dados: %d, Dirty: %v", version, dirty)
 
-	env := os.Getenv("ENV")
-	if env == "" {
-		env = "dev"
-	}
-
-	if env == "dev" {
+	if config.EnvVariables.AppEnv == "development" {
 		log.Println("Ambiente de desenvolvimento detectado. Aplicando seed...")
 		seed, err := migrate.New(
-			migrationsPath,
-			dbURL)
+			SEEDS_PATH,
+			config.EnvVariables.DatabaseURL)
 		if err != nil {
 			log.Fatal(err)
 		}

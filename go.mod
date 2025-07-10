@@ -1,4 +1,4 @@
-module github.com/Codando-Junto/ong_da_laiz
+module lucienne
 
 go 1.23.0
 
