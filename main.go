@@ -21,16 +21,11 @@ const (
 func main() {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/health", HealthHandler).Methods("GET")
+	handlers.ReturnHealth(r)
 	handlers.DefineAuthors(r)
 
 	log.Println("Rodando na porta: " + config.EnvVariables.AppPort)
 	log.Fatal(http.ListenAndServe(":"+config.EnvVariables.AppPort, r))
-}
-
-func HealthHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
 }
 
 func init() {
