@@ -26,7 +26,7 @@ func UpdateAuthor(w http.ResponseWriter, r *http.Request) {
 func CreateAuthorHandler(w http.ResponseWriter, r *http.Request) {
 	var req CreateAuthorRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Corpo da requisição inválido", http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Corpo da requisição inválido: %s", err), http.StatusBadRequest)
 		return
 	}
 
