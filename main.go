@@ -37,7 +37,7 @@ func init() {
 	config.EnvVariables.Load()
 
 	m, err := migrate.New(
-		MIGRATIONS_PATH,
+		MigrationsPath,
 		config.EnvVariables.DatabaseURL,
 	)
 	if err != nil {
@@ -65,7 +65,7 @@ func init() {
 	if config.EnvVariables.AppEnv == "development" {
 		log.Println("Ambiente de desenvolvimento detectado. Aplicando seed...")
 		seed, err := migrate.New(
-			SEEDS_PATH,
+			SeedsPath,
 			config.EnvVariables.DatabaseURL)
 		if err != nil {
 			log.Fatal(err)
