@@ -52,6 +52,29 @@ Exemplo de resposta:
 Código de status: 200 OK
 Corpo da resposta: vazio
 
+### Rota POST /authors
+Descrição: Cria um novo autor. Requer um corpo JSON com o campo `name`.
+
+**Exemplo de sucesso (Nome válido):**
+
+```bash
+curl -i -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Clarice Lispector"}' \
+  http://localhost:9090/authors
+```
+*   **Resposta esperada (Status `201 Created`):** `Autor criado com sucesso: Clarice Lispector`
+
+**Exemplo de falha (Nome vazio):**
+
+```bash
+curl -i -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"name": "  "}' \
+  http://localhost:9090/authors
+```
+*   **Resposta esperada (Status `400 Bad Request`):** `O campo "name" é obrigatório`
+
 ## 5. Estrutura de diretórios da aplicação
 Nós entendemos que o Go, juntamente com a comunidade, não são opinativos quanto a estrutura de diretórios a seguir. Então, compilamos uma estrutura inicial e com o tempo e conforme a aplicação
 e o time forem amadurecendo, ela crescerá junto. Mas atualmente temos:
