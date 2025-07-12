@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Codando-Junto/ong_da_laiz/internal/handlers"
+	"lucienne/internal/handlers"
 )
 
 // Testa se o endpoint PATCH /authors/{id} responde corretamente com status 200 e mensagem esperada
@@ -27,6 +27,44 @@ func TestUpdateAuthor(t *testing.T) {
 		// Verifica se o conteúdo retornado pelo handler inclui "OK"
 		if !strings.Contains(rec.Body.String(), "OK") {
 			t.Errorf("esperado mensagem de sucesso, recebido: %s", rec.Body.String())
+		}
+	})
+}
+
+func TestCreateAuthor(t *testing.T) {
+	t.Run("deve retornar 201 Created quando o corpo da requisição é válido", func(t *testing.T) {
+		requestBody := strings.NewReader(`{"name": "Teste Autor"}`)
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/authors", requestBody)
+
+		handler := http.HandlerFunc(handlers.CreateAuthorHandler)
+		handler.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusCreated {
+			t.Errorf("esperado status %d, recebido %d", http.StatusCreated, rec.Code)
+		}
+
+		expectedBody := "Autor criado com sucesso: Teste Autor"
+		if !strings.Contains(rec.Body.String(), expectedBody) {
+			t.Errorf("esperado que o corpo contivesse '%s', mas o corpo foi: '%s'", expectedBody, rec.Body.String())
+		}
+	})
+
+	t.Run("deve retornar 400 Bad Request quando o nome está em branco", func(t *testing.T) {
+		requestBody := strings.NewReader(`{"name": "   "}`)
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/authors", requestBody)
+
+		handler := http.HandlerFunc(handlers.CreateAuthorHandler)
+		handler.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("esperado status %d, recebido %d", http.StatusBadRequest, rec.Code)
+		}
+
+		expectedBody := `O campo "name" é obrigatório`
+		if !strings.Contains(rec.Body.String(), expectedBody) {
+			t.Errorf("esperado que o corpo contivesse '%s', mas o corpo foi: '%s'", expectedBody, rec.Body.String())
 		}
 	})
 }
