@@ -3,6 +3,7 @@ package handlers_test
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -33,9 +34,13 @@ func TestUpdateAuthor(t *testing.T) {
 
 func TestCreateAuthor(t *testing.T) {
 	t.Run("deve retornar 201 Created quando o corpo da requisição é válido", func(t *testing.T) {
-		requestBody := strings.NewReader(`{"name": "Teste Autor"}`)
+		form := url.Values{}
+		form.Set("name", "Teste Autor")
+		requestBody := strings.NewReader(form.Encode())
+
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest("POST", "/authors", requestBody)
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		handler := http.HandlerFunc(handlers.CreateAuthorHandler)
 		handler.ServeHTTP(rec, req)
@@ -51,9 +56,13 @@ func TestCreateAuthor(t *testing.T) {
 	})
 
 	t.Run("deve retornar 400 Bad Request quando o nome está em branco", func(t *testing.T) {
-		requestBody := strings.NewReader(`{"name": "   "}`)
+		form := url.Values{}
+		form.Set("name", "   ")
+		requestBody := strings.NewReader(form.Encode())
+
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest("POST", "/authors", requestBody)
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		handler := http.HandlerFunc(handlers.CreateAuthorHandler)
 		handler.ServeHTTP(rec, req)

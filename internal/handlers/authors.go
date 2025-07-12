@@ -1,16 +1,11 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 
 	"github.com/gorilla/mux"
 )
-
-type CreateAuthorRequest struct {
-	Name string `json:"name"`
-}
 
 func DefineAuthors(router *mux.Router) {
 	authorsRouter := router.PathPrefix("/authors").Subrouter()
@@ -24,18 +19,20 @@ func UpdateAuthor(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateAuthorHandler(w http.ResponseWriter, r *http.Request) {
-	var req CreateAuthorRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, fmt.Sprintf("Corpo da requisição inválido: %s", err), http.StatusBadRequest)
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Erro ao processar o formulário", http.StatusBadRequest)
 		return
 	}
 
-	if strings.TrimSpace(req.Name) == "" {
+	name := r.FormValue("name")
+
+	if strings.TrimSpace(name) == "" {
 		http.Error(w, `O campo "name" é obrigatório`, http.StatusBadRequest)
 		return
 	}
 
 	// Aqui viria a lógica para salvar o autor no banco de dados...
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("Autor criado com sucesso: " + req.Name))
+	w.Write([]byte("Autor criado com sucesso: " + name))
 }
