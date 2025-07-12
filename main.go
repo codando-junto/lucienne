@@ -1,25 +1,28 @@
 package main
 
 import (
-	"context"
 	"log"
 	"lucienne/config"
 	"net/http"
 
 	"lucienne/internal/handlers"
-	"lucienne/internal/infra/database"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/gorilla/mux"
+)
+
+const (
+	MIGRATIONS_PATH = "file://db/migrations"
+	SEEDS_PATH      = "file://db/seeds"
+)
 
 func main() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/health", HealthHandler).Methods("GET")
 	handlers.DefineAuthors(r)
-
 
 	log.Println("Rodando na porta: " + config.EnvVariables.AppPort)
 	log.Fatal(http.ListenAndServe(":"+config.EnvVariables.AppPort, r))

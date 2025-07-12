@@ -1,0 +1,5 @@
+[dev]
+144.202.86.227
+
+[dev:vars]
+ansible_user=root
