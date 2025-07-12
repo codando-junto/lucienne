@@ -1,0 +1,42 @@
+name: Deploy to dev
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  DOCKER_IMAGE: "gomex/luciene"
+  ENV_VARS: |
+    PORT=9090
+    DATABASE_URL=postgres://postgres:postgres@postgres:5432/biblioteca?sslmode=disable
+    APP_ENV=development
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build and push the Docker image
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: |
+        docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+        docker build . --tag ${{ env.DOCKER_IMAGE }}
+        docker push ${{ env.DOCKER_IMAGE }}
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build_and_push
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Add SSH private key
+      run: |
+        mkdir -p ~/.ssh/
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key.pem
+        chmod 600 ~/.ssh/deploy_key.pem
+  
+    - name: Deploy using Ansible
+      run: |
+        echo "${{ env.ENV_VARS }}" > .env
+        ANSIBLE_HOST_KEY_CHECKING=false ansible-playbook -i iac/ansible/hosts -l all --private-key  ~/.ssh/deploy_key.pem  iac/ansible/playbook.yaml

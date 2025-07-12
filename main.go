@@ -16,6 +16,7 @@ import (
 const (
 	MigrationsPath = "file://db/migrations"
 	SeedsPath      = "file://db/seeds"
+
 )
 
 func main() {
