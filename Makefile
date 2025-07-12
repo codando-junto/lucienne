@@ -3,7 +3,7 @@
 dev:
 	docker compose stop
 	docker compose rm -f
-	docker compose up --build
+	docker compose -f docker-compose.yml -f local-compose-override.yml up --build
 
 down:
 	docker compose down
