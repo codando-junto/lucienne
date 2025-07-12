@@ -33,47 +33,57 @@ func TestUpdateAuthor(t *testing.T) {
 }
 
 func TestCreateAuthor(t *testing.T) {
-	t.Run("deve retornar 201 Created quando o corpo da requisição é válido", func(t *testing.T) {
-		form := url.Values{}
-		form.Set("name", "Teste Autor")
-		requestBody := strings.NewReader(form.Encode())
+	testCases := []struct {
+		name         string
+		formValues   map[string]string
+		expectedCode int
+		expectedBody string
+	}{
+		{
+			name: "deve retornar 201 Created quando o corpo da requisição é válido",
+			formValues: map[string]string{
+				"name": "Teste Autor",
+			},
+			expectedCode: http.StatusCreated,
+			expectedBody: "Autor criado com sucesso: Teste Autor",
+		},
+		{
+			name: "deve retornar 400 Bad Request quando o nome está em branco",
+			formValues: map[string]string{
+				"name": "   ",
+			},
+			expectedCode: http.StatusBadRequest,
+			expectedBody: `O campo "name" é obrigatório`,
+		},
+		{
+			name:         "deve retornar 400 Bad Request quando o formulário está vazio",
+			formValues:   map[string]string{},
+			expectedCode: http.StatusBadRequest,
+			expectedBody: `O campo "name" é obrigatório`,
+		},
+	}
 
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest("POST", "/authors", requestBody)
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			form := url.Values{}
+			for key, value := range tc.formValues {
+				form.Set(key, value)
+			}
+			requestBody := strings.NewReader(form.Encode())
 
-		handler := http.HandlerFunc(handlers.CreateAuthorHandler)
-		handler.ServeHTTP(rec, req)
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest("POST", "/authors", requestBody)
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-		if rec.Code != http.StatusCreated {
-			t.Errorf("esperado status %d, recebido %d", http.StatusCreated, rec.Code)
-		}
+			handler := http.HandlerFunc(handlers.CreateAuthorHandler)
+			handler.ServeHTTP(rec, req)
 
-		expectedBody := "Autor criado com sucesso: Teste Autor"
-		if !strings.Contains(rec.Body.String(), expectedBody) {
-			t.Errorf("esperado que o corpo contivesse '%s', mas o corpo foi: '%s'", expectedBody, rec.Body.String())
-		}
-	})
-
-	t.Run("deve retornar 400 Bad Request quando o nome está em branco", func(t *testing.T) {
-		form := url.Values{}
-		form.Set("name", "   ")
-		requestBody := strings.NewReader(form.Encode())
-
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest("POST", "/authors", requestBody)
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-		handler := http.HandlerFunc(handlers.CreateAuthorHandler)
-		handler.ServeHTTP(rec, req)
-
-		if rec.Code != http.StatusBadRequest {
-			t.Errorf("esperado status %d, recebido %d", http.StatusBadRequest, rec.Code)
-		}
-
-		expectedBody := `O campo "name" é obrigatório`
-		if !strings.Contains(rec.Body.String(), expectedBody) {
-			t.Errorf("esperado que o corpo contivesse '%s', mas o corpo foi: '%s'", expectedBody, rec.Body.String())
-		}
-	})
+			if rec.Code != tc.expectedCode {
+				t.Errorf("esperado status %d, recebido %d", tc.expectedCode, rec.Code)
+			}
+			if !strings.Contains(rec.Body.String(), tc.expectedBody) {
+				t.Errorf("esperado que o corpo contivesse '%s', mas o corpo foi: '%s'", tc.expectedBody, rec.Body.String())
+			}
+		})
+	}
 }
