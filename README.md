@@ -73,8 +73,8 @@ curl -i -X POST \
 
 ```bash
 curl -i -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"name": "  "}' \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "name=  " \
   http://localhost:9090/authors
 ```
 *   **Resposta esperada (Status `400 Bad Request`):** `O campo "name" é obrigatório`
