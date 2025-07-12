@@ -53,17 +53,21 @@ Código de status: 200 OK
 Corpo da resposta: vazio
 
 ### Rota POST /authors
-Descrição: Cria um novo autor. Requer um corpo JSON com o campo `name`.
+
+Descrição: Cria um novo autor. Requer dados de formulário (`application/x-www-form-urlencoded`) com o campo `name`.
+
 
 **Exemplo de sucesso (Nome válido):**
 
 ```bash
 curl -i -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Clarice Lispector"}' \
+
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "name=Teste Autor" \
   http://localhost:9090/authors
 ```
-*   **Resposta esperada (Status `201 Created`):** `Autor criado com sucesso: Clarice Lispector`
+*   **Resposta esperada (Status `201 Created`):** `Autor criado com sucesso: Teste Autor`
+
 
 **Exemplo de falha (Nome vazio):**
 

@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	MIGRATIONS_PATH = "file://db/migrations"
-	SEEDS_PATH      = "file://db/seeds"
+	MigrationsPath = "file://db/migrations"
+	SeedsPath      = "file://db/seeds"
+
 )
 
 func main() {
@@ -32,7 +33,7 @@ func init() {
 	config.EnvVariables.Load()
 
 	m, err := migrate.New(
-		MIGRATIONS_PATH,
+		MigrationsPath,
 		config.EnvVariables.DatabaseURL,
 	)
 	if err != nil {
@@ -60,7 +61,7 @@ func init() {
 	if config.EnvVariables.AppEnv == "development" {
 		log.Println("Ambiente de desenvolvimento detectado. Aplicando seed...")
 		seed, err := migrate.New(
-			SEEDS_PATH,
+			SeedsPath,
 			config.EnvVariables.DatabaseURL)
 		if err != nil {
 			log.Fatal(err)
