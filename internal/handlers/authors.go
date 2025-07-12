@@ -19,7 +19,6 @@ func UpdateAuthor(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateAuthorHandler(w http.ResponseWriter, r *http.Request) {
-
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Erro ao processar o formulário", http.StatusBadRequest)
 		return
