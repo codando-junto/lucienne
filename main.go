@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	MIGRATIONS_PATH = "file://db/migrations"
-	SEEDS_PATH      = "file://db/seeds"
+	MigrationsPath = "file://db/migrations"
+	SeedsPath      = "file://db/seeds"
 )
 
 func main() {
