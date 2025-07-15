@@ -61,7 +61,6 @@ Descrição: Cria um novo autor. Requer dados de formulário (`application/x-www
 
 ```bash
 curl -i -X POST \
-
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "name=Teste Autor" \
   http://localhost:9090/authors
