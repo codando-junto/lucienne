@@ -1,6 +1,10 @@
 package handlers
 
 import (
+	"fmt"
+	"log"
+	"lucienne/internal/domain"
+	"lucienne/internal/infra/repository"
 	"net/http"
 	"strings"
 
@@ -37,9 +41,19 @@ func CreateAuthorHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Aqui viria a lógica para salvar o autor no banco de dados...
+	author := &domain.Author{
+		Name: name,
+	}
+
+	err := repository.CreateAuthor(r.Context(), author)
+	if err != nil {
+		log.Printf("Erro ao criar autor: %v", err)
+		http.Error(w, "Erro ao criar autor", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusCreated)
 
-	w.Write([]byte("Autor criado com sucesso: " + name))
-
+	responseMessage := fmt.Sprintf("Autor criado com sucesso: %s", name)
+	w.Write([]byte(responseMessage))
 }

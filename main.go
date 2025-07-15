@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"lucienne/config"
+	"lucienne/internal/infra/database"
 	"net/http"
 
 	"lucienne/internal/handlers"
@@ -16,7 +17,6 @@ import (
 const (
 	MigrationsPath = "file://db/migrations"
 	SeedsPath      = "file://db/seeds"
-
 )
 
 func main() {
@@ -31,6 +31,7 @@ func main() {
 
 func init() {
 	config.EnvVariables.Load()
+	database.ConnectDB()
 
 	m, err := migrate.New(
 		MigrationsPath,
