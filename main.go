@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"lucienne/internal/handlers"
+	"lucienne/internal/infra/database"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -16,7 +17,6 @@ import (
 const (
 	MigrationsPath = "file://db/migrations"
 	SeedsPath      = "file://db/seeds"
-
 )
 
 func main() {
@@ -31,6 +31,7 @@ func main() {
 
 func init() {
 	config.EnvVariables.Load()
+	database.ConnectDB()
 
 	m, err := migrate.New(
 		MigrationsPath,
