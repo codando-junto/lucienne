@@ -1,6 +1,8 @@
 package handlers_test
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -8,28 +10,48 @@ import (
 	"testing"
 
 	"lucienne/internal/handlers"
+	"lucienne/internal/infra/database"
+
+	"github.com/gorilla/mux"
 )
 
-// Testa se o endpoint PATCH /authors/{id} responde corretamente com status 200 e mensagem esperada
 func TestUpdateAuthor(t *testing.T) {
-	t.Run("deve responder 200 ao chamar PATCH /authors/{id}", func(t *testing.T) {
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest("PATCH", "/authors/123", nil)
+	database.ConnectDB()
 
-		// router ou handler direto
-		handler := http.HandlerFunc(handlers.UpdateAuthor)
-		handler.ServeHTTP(rec, req)
+	var id int
+	err := database.Conn.QueryRow(context.Background(), "INSERT INTO authors (name) VALUES ($1) RETURNING id", "Nome Antigo").Scan(&id)
+	if err != nil {
+		t.Fatalf("erro ao inserir autor de teste: %v", err)
+	}
+	defer database.Conn.Exec(context.Background(), "DELETE FROM authors WHERE id = $1", id)
 
-		// Verifica se o status de resposta foi 200
-		if rec.Code != http.StatusOK {
-			t.Errorf("esperado status 200, recebido %d", rec.Code)
-		}
+	form := url.Values{}
+	form.Set("name", "Novo Nome")
 
-		// Verifica se o conteúdo retornado pelo handler inclui "OK"
-		if !strings.Contains(rec.Body.String(), "OK") {
-			t.Errorf("esperado mensagem de sucesso, recebido: %s", rec.Body.String())
-		}
-	})
+	req := httptest.NewRequest("PATCH", fmt.Sprintf("/authors/%d", id), strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+
+	router := mux.NewRouter()
+	router.HandleFunc("/authors/{id}", handlers.UpdateAuthor).Methods("PATCH")
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("esperado status 200, recebido %d", rec.Code)
+	}
+
+	if !strings.Contains(rec.Body.String(), "Autor atualizado com sucesso") {
+		t.Errorf("mensagem de sucesso não encontrada. Resposta: %s", rec.Body.String())
+	}
+
+	var name string
+	err = database.Conn.QueryRow(context.Background(), "SELECT name FROM authors WHERE id = $1", id).Scan(&name)
+	if err != nil {
+		t.Fatalf("erro ao consultar autor atualizado: %v", err)
+	}
+	if name != "Novo Nome" {
+		t.Errorf("esperado nome 'Novo Nome', recebido '%s'", name)
+	}
 }
 
 func TestCreateAuthor(t *testing.T) {
