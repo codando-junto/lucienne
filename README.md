@@ -52,18 +52,22 @@ Exemplo de resposta:
 Código de status: 200 OK
 Corpo da resposta: vazio
 
-### Rota POST /authors
+## Como Rodar os Testes Unitários
 
-Descrição: Cria um novo autor. Requer dados de formulário (`application/x-www-form-urlencoded`) com o campo `name`.
+Para executar todos os testes unitários do projeto, use o comando:
+
+```bash
+go test -v ./...
+
+### Testando a Rota POST /authors
+
+Descrição: A rota /authors permite a criação de um novo autor. Para isso, você deve enviar dados de formulário (`application/x-www-form-urlencoded`) com o campo name.
 
 
 **Exemplo de sucesso (Nome válido):**
 
 ```bash
-curl -i -X POST \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "name=Teste Autor" \
-  http://localhost:9090/authors
+curl -X POST -d "name=Teste Autor" http://localhost:8080/authors
 ```
 *   **Resposta esperada (Status `201 Created`):** `Autor criado com sucesso: Teste Autor`
 
@@ -71,10 +75,7 @@ curl -i -X POST \
 **Exemplo de falha (Nome vazio):**
 
 ```bash
-curl -i -X POST \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "name=  " \
-  http://localhost:9090/authors
+curl -X POST -d "name= "" " http://localhost:8080/authors
 ```
 *   **Resposta esperada (Status `400 Bad Request`):** `O campo "name" é obrigatório`
 

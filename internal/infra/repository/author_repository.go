@@ -14,15 +14,16 @@ import (
 var ErrAuthorAlreadyExists = errors.New("author already exists")
 
 const (
-	authorExistsQuery = `SELECT 1 FROM autores WHERE nome = $1`
+	authorExistsQuery = `SELECT 1 FROM authors WHERE name = $1`
 )
 
 const (
 	// Não precisamos retornar o ID por enquanto, então usamos um INSERT simples.
-	createAuthorQuery = `INSERT INTO autores (nome) VALUES ($1)`
+	createAuthorQuery = `INSERT INTO authors (name) VALUES ($1)`
 )
 
 // AuthorRepository define a interface para as operações de autor no banco de dados.
+// Esta interface será implementada pelo PostgresAuthorRepository e usada pelos handlers.
 type AuthorRepository interface {
 	CreateAuthor(ctx context.Context, author *domain.Author) error
 	AuthorExists(ctx context.Context, authorName string) (bool, error)

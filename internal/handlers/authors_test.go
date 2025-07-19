@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"lucienne/internal/domain"
+	"lucienne/internal/infra/repository"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -82,6 +83,36 @@ func TestCreateAuthorHandler(t *testing.T) {
 			},
 			expectedStatusCode:   http.StatusInternalServerError,
 			expectedBodyContains: "Erro interno do servidor ao verificar autor",
+		},
+		{
+			name:     "deve retornar erro 409 em caso de race condition na criação",
+			formName: "Autor Concorrente",
+			mockRepo: &MockAuthorRepository{
+				AuthorExistsFunc: func(ctx context.Context, authorName string) (bool, error) {
+					return false, nil // Simula que o autor não existe na primeira verificação
+				},
+				CreateAuthorFunc: func(ctx context.Context, author *domain.Author) error {
+					// Simula que, no momento da criação, o autor já existe (race condition)
+					return repository.ErrAuthorAlreadyExists
+				},
+			},
+			expectedStatusCode:   http.StatusConflict,
+			expectedBodyContains: "Erro: O autor 'Autor Concorrente' já está cadastrado.",
+		},
+		{
+			name:     "deve retornar erro 500 se houver erro ao criar o autor",
+			formName: "Autor com Falha",
+			mockRepo: &MockAuthorRepository{
+				AuthorExistsFunc: func(ctx context.Context, authorName string) (bool, error) {
+					return false, nil // Simula que o autor não existe
+				},
+				CreateAuthorFunc: func(ctx context.Context, author *domain.Author) error {
+					// Simula um erro genérico na criação
+					return errors.New("erro de disco no banco de dados")
+				},
+			},
+			expectedStatusCode:   http.StatusInternalServerError,
+			expectedBodyContains: "Erro interno ao criar autor",
 		},
 	}
 
