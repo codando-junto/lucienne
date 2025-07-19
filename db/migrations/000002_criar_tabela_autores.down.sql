@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS autores;
+DROP TABLE IF EXISTS authors;

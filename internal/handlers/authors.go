@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"lucienne/internal/domain"
@@ -68,8 +69,15 @@ func (h *AuthorHandler) CreateAuthorHandler(w http.ResponseWriter, r *http.Reque
 	}
 	err = h.repo.CreateAuthor(r.Context(), author)
 	if err != nil {
-		log.Printf("Erro ao criar autor: %v", err)
-		http.Error(w, "Erro ao criar autor", http.StatusInternalServerError)
+		// Verifica se o erro é de autor já existente, que pode ocorrer
+		// apesar da verificação anterior devido a condições de corrida (race conditions).
+		if errors.Is(err, repository.ErrAuthorAlreadyExists) {
+			errorMessage := fmt.Sprintf("Erro: O autor '%s' já está cadastrado.", name)
+			http.Error(w, errorMessage, http.StatusConflict)
+			return
+		}
+		log.Printf("Erro inesperado ao criar autor: %v", err)
+		http.Error(w, "Erro interno ao criar autor", http.StatusInternalServerError)
 		return
 	}
 

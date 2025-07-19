@@ -1,4 +1,4 @@
-INSERT INTO autores (nome)
+INSERT INTO authors (name)
 VALUES
 ('Neil Gaiman'),
 ('J.R.R. Tolkien'),
