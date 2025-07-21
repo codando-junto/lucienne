@@ -15,9 +15,7 @@ var ErrAuthorAlreadyExists = errors.New("author already exists")
 
 const (
 	authorExistsQuery = `SELECT 1 FROM authors WHERE name = $1`
-)
 
-const (
 	// Não precisamos retornar o ID por enquanto, então usamos um INSERT simples.
 	createAuthorQuery = `INSERT INTO authors (name) VALUES ($1)`
 )
