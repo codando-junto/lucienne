@@ -67,7 +67,7 @@ Descrição: A rota /authors permite a criação de um novo autor. Para isso, vo
 **Exemplo de sucesso (Nome válido):**
 
 ```bash
-curl -X POST -d "name=Teste Autor" http://localhost:8080/authors
+curl -X POST -d "name=Teste Autor" http://localhost:9090/authors
 ```
 *   **Resposta esperada (Status `201 Created`):** `Autor criado com sucesso: Teste Autor`
 
