@@ -6,7 +6,6 @@ import (
 	"lucienne/internal/domain"
 	"lucienne/internal/infra/database"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -14,17 +13,13 @@ import (
 var ErrAuthorAlreadyExists = errors.New("author already exists")
 
 const (
-	authorExistsQuery = `SELECT 1 FROM authors WHERE name = $1`
-
 	// Não precisamos retornar o ID por enquanto, então usamos um INSERT simples.
 	createAuthorQuery = `INSERT INTO authors (name) VALUES ($1)`
 )
 
 // AuthorRepository define a interface para as operações de autor no banco de dados.
-// Esta interface será implementada pelo PostgresAuthorRepository e usada pelos handlers.
 type AuthorRepository interface {
 	CreateAuthor(ctx context.Context, author *domain.Author) error
-	AuthorExists(ctx context.Context, authorName string) (bool, error)
 }
 
 // PostgresAuthorRepository é a implementação do AuthorRepository para o PostgreSQL.
@@ -51,19 +46,4 @@ func (r *PostgresAuthorRepository) CreateAuthor(ctx context.Context, author *dom
 		return err
 	}
 	return nil
-}
-
-// AuthorExists verifica se um autor com o nome especificado já existe no banco de dados.
-func (r *PostgresAuthorRepository) AuthorExists(ctx context.Context, authorName string) (bool, error) {
-	// Usamos "SELECT 1" pois só nos importamos com a existência da linha,
-	// não com os dados dela.
-	var placeholder int
-	err := database.Conn.QueryRow(ctx, authorExistsQuery, authorName).Scan(&placeholder)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return false, nil // Autor não existe, não é um erro.
-		}
-		return false, err // Erro real do banco de dados.
-	}
-	return true, nil // Autor existe.
 }

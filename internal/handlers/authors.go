@@ -48,29 +48,14 @@ func (h *AuthorHandler) CreateAuthorHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// 2. Verifica se o autor já existe no banco de dados
-	exists, err := h.repo.AuthorExists(r.Context(), name)
-	if err != nil {
-		log.Printf("Erro ao verificar a existência do autor: %v", err)
-		http.Error(w, "Erro interno do servidor ao verificar autor", http.StatusInternalServerError)
-		return
-	}
-
-	// 3. Se o autor já existir, retorna um erro 409 Conflict
-	if exists {
-		errorMessage := fmt.Sprintf("Erro: O autor '%s' já está cadastrado.", name)
-		http.Error(w, errorMessage, http.StatusConflict)
-		return
-	}
-
-	// 4. Se o autor não existe, prossegue com a criação
+	// 2. Tenta criar o autor no banco de dados
 	author := &domain.Author{
 		Name: name,
 	}
-	err = h.repo.CreateAuthor(r.Context(), author)
+	err := h.repo.CreateAuthor(r.Context(), author)
 	if err != nil {
-		// Verifica se o erro é de autor já existente, que pode ocorrer
-		// apesar da verificação anterior devido a condições de corrida (race conditions).
+		// Se o repositório retornar o erro de que o autor já existe
+		//  retorna 409 Conflict.
 		if errors.Is(err, repository.ErrAuthorAlreadyExists) {
 			errorMessage := fmt.Sprintf("Erro: O autor '%s' já está cadastrado.", name)
 			http.Error(w, errorMessage, http.StatusConflict)

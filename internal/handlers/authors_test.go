@@ -14,18 +14,10 @@ import (
 
 // MockAuthorRepository é a nossa implementação falsa do repositório para testes.
 type MockAuthorRepository struct {
-	AuthorExistsFunc func(ctx context.Context, authorName string) (bool, error)
 	CreateAuthorFunc func(ctx context.Context, author *domain.Author) error
 }
 
 // Implementamos os métodos da interface AuthorRepository.
-func (m *MockAuthorRepository) AuthorExists(ctx context.Context, authorName string) (bool, error) {
-	if m.AuthorExistsFunc != nil {
-		return m.AuthorExistsFunc(ctx, authorName)
-	}
-	return false, nil
-}
-
 func (m *MockAuthorRepository) CreateAuthor(ctx context.Context, author *domain.Author) error {
 	if m.CreateAuthorFunc != nil {
 		return m.CreateAuthorFunc(ctx, author)
@@ -45,9 +37,6 @@ func TestCreateAuthorHandler(t *testing.T) {
 			name:     "deve criar um autor com sucesso",
 			formName: "Novo Autor",
 			mockRepo: &MockAuthorRepository{
-				AuthorExistsFunc: func(ctx context.Context, authorName string) (bool, error) {
-					return false, nil // Simula que o autor não existe
-				},
 				CreateAuthorFunc: func(ctx context.Context, author *domain.Author) error {
 					return nil // Simula que a criação no banco foi bem-sucedida
 				},
@@ -56,11 +45,11 @@ func TestCreateAuthorHandler(t *testing.T) {
 			expectedBodyContains: "Autor criado com sucesso: Novo Autor",
 		},
 		{
-			name:     "deve retornar erro 409 se o autor já existir",
+			name:     "deve retornar erro 409 ao tentar criar um autor que já existe",
 			formName: "Autor Existente",
 			mockRepo: &MockAuthorRepository{
-				AuthorExistsFunc: func(ctx context.Context, authorName string) (bool, error) {
-					return true, nil // Simula que o autor JÁ existe
+				CreateAuthorFunc: func(ctx context.Context, author *domain.Author) error {
+					return repository.ErrAuthorAlreadyExists // Simula erro de duplicidade do DB
 				},
 			},
 			expectedStatusCode:   http.StatusConflict,
@@ -74,40 +63,11 @@ func TestCreateAuthorHandler(t *testing.T) {
 			expectedBodyContains: `O campo "name" é obrigatório`,
 		},
 		{
-			name:     "deve retornar erro 500 se houver erro ao verificar existência",
-			formName: "Qualquer Autor",
-			mockRepo: &MockAuthorRepository{
-				AuthorExistsFunc: func(ctx context.Context, authorName string) (bool, error) {
-					return false, errors.New("erro de conexão com o banco") // Simula um erro no DB
-				},
-			},
-			expectedStatusCode:   http.StatusInternalServerError,
-			expectedBodyContains: "Erro interno do servidor ao verificar autor",
-		},
-		{
-			name:     "deve retornar erro 409 em caso de race condition na criação",
-			formName: "Autor Concorrente",
-			mockRepo: &MockAuthorRepository{
-				AuthorExistsFunc: func(ctx context.Context, authorName string) (bool, error) {
-					return false, nil // Simula que o autor não existe na primeira verificação
-				},
-				CreateAuthorFunc: func(ctx context.Context, author *domain.Author) error {
-					// Simula que, no momento da criação, o autor já existe (race condition)
-					return repository.ErrAuthorAlreadyExists
-				},
-			},
-			expectedStatusCode:   http.StatusConflict,
-			expectedBodyContains: "Erro: O autor 'Autor Concorrente' já está cadastrado.",
-		},
-		{
 			name:     "deve retornar erro 500 se houver erro ao criar o autor",
 			formName: "Autor com Falha",
 			mockRepo: &MockAuthorRepository{
-				AuthorExistsFunc: func(ctx context.Context, authorName string) (bool, error) {
-					return false, nil // Simula que o autor não existe
-				},
 				CreateAuthorFunc: func(ctx context.Context, author *domain.Author) error {
-					// Simula um erro genérico na criação
+					// Simula um erro genérico do DB na criação
 					return errors.New("erro de disco no banco de dados")
 				},
 			},
