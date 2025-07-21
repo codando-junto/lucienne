@@ -75,7 +75,7 @@ curl -X POST -d "name=Teste Autor" http://localhost:9090/authors
 **Exemplo de falha (Nome vazio):**
 
 ```bash
-curl -X POST -d "name= "" " http://localhost:8080/authors
+curl -X POST -d "name= "" " http://localhost:9090/authors
 ```
 *   **Resposta esperada (Status `400 Bad Request`):** `O campo "name" é obrigatório`
 
