@@ -34,14 +34,14 @@ erDiagram
         autor_id INTEGER "FK, NOT NULL"
         editora_id INTEGER "FK, NOT NULL"
     }
-    
+
     PEDIDOS {
         id INTEGER "PK"
         numero INTEGER "UNIQUE, NOT NULL"
         status VARCHAR(20) "NOT NULL"
         link_de_rastreio VARCHAR(100) "NOT NULL"
         user_id INTEGER "FK, NOT NULL"
-        
+
     }
 
     ITENS_DE_PEDIDO {

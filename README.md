@@ -82,7 +82,7 @@ curl -X POST -d "name= "" " http://localhost:9090/authors
 ## 5. Estrutura de diretórios da aplicação
 Nós entendemos que o Go, juntamente com a comunidade, não são opinativos quanto a estrutura de diretórios a seguir. Então, compilamos uma estrutura inicial e com o tempo e conforme a aplicação
 e o time forem amadurecendo, ela crescerá junto. Mas atualmente temos:
-```  
+```
   |- cmd: pasta de comandos
   |- db: pasta raiz para scripts de banco
       |- migrations: pasta com as migrações do banco

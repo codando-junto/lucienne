@@ -1,5 +1,5 @@
 INSERT INTO editoras (nome)
-VALUES 
+VALUES
 ('Passa Palavra'),
 ('Companhia das Letras'),
 ('Faisca');
