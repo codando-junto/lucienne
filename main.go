@@ -12,14 +12,20 @@ import (
 )
 
 const (
-	MIGRATIONS_PATH = "file://db/migrations"
-	SEEDS_PATH      = "file://db/seeds"
+	MIGRATIONS_PATH     = "file://db/migrations"
+	SEEDS_PATH          = "file://db/seeds"
+	AssetsPath          = "assets"
+	CompiledAssetsPath  = "public/assets"
+	AssetsBuildFilePath = "public/build.json"
+	ViewsPath           = "internal/views"
+	AssetsServerPath    = "/assets"
 )
 
 func main() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/health", HealthHandler).Methods("GET")
+	r.PathPrefix(AssetsServerPath).Handler(http.StripPrefix(AssetsServerPath, http.FileServer(http.Dir(CompiledAssetsPath))))
 
 	log.Println("Rodando na porta: " + config.EnvVariables.AppPort)
 	log.Fatal(http.ListenAndServe(":"+config.EnvVariables.AppPort, r))
@@ -32,6 +38,8 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 
 func init() {
 	config.EnvVariables.Load()
+	config.Application.Configure(config.EnvVariables.AppEnv)
+	config.Assets.Configure(AssetsPath, CompiledAssetsPath, AssetsBuildFilePath)
 
 	m, err := migrate.New(
 		MIGRATIONS_PATH,
