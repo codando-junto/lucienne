@@ -3,11 +3,10 @@ package main
 import (
 	"log"
 	"lucienne/config"
+	"lucienne/internal/handlers"
 	"lucienne/internal/infra/database"
 	"lucienne/internal/infra/repository"
 	"net/http"
-
-	"lucienne/internal/handlers"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -16,12 +15,23 @@ import (
 )
 
 const (
-	MigrationsPath = "file://db/migrations"
-	SeedsPath      = "file://db/seeds"
+	AssetsPath          = "assets"
+	CompiledAssetsPath  = "public/assets"
+	AssetsBuildFilePath = "public/build.json"
+	ViewsPath           = "internal/views"
+	AssetsServerPath    = "/assets"
+	MigrationsPath      = "file://db/migrations"
+	SeedsPath           = "file://db/seeds"
 )
 
 func main() {
 	r := mux.NewRouter()
+
+	r.HandleFunc("/health", HealthHandler).Methods("GET")
+	r.PathPrefix(AssetsServerPath).Handler(http.StripPrefix(AssetsServerPath, http.FileServer(http.Dir(CompiledAssetsPath))))
+
+	log.Println("Rodando na porta: " + config.EnvVariables.AppPort)
+	log.Fatal(http.ListenAndServe(":"+config.EnvVariables.AppPort, r))
 
 	// Injeção de Dependência
 	authorRepo := repository.NewPostgresAuthorRepository()
@@ -36,6 +46,8 @@ func main() {
 
 func init() {
 	config.EnvVariables.Load()
+	config.Application.Configure(config.EnvVariables.AppEnv)
+	config.Assets.Configure(AssetsPath, CompiledAssetsPath, AssetsBuildFilePath)
 	database.ConnectDB()
 
 	m, err := migrate.New(
@@ -73,7 +85,7 @@ func init() {
 		log.Fatalf("Erro ao fechar a conexão do banco de dados da migração: %v", dbErr)
 	}
 
-	if config.EnvVariables.AppEnv == "development" {
+	if config.Application.IsDevelopment() {
 		log.Println("Ambiente de desenvolvimento detectado. Aplicando seed...")
 		seed, err := migrate.New(
 			SeedsPath,

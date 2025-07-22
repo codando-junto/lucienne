@@ -4,7 +4,7 @@ FROM golang:1.24
 # Defina o diretório de trabalho dentro do container
 WORKDIR /app
 
-RUN apt-get update ; apt-get install coreutils -y
+RUN apt-get update ; apt-get install coreutils nodejs -y
 
 # Faça cache das dependências copiando go.mod e go.sum primeiro
 COPY go.* ./

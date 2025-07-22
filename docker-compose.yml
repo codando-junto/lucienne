@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: biblioteca
+      POSTGRES_DB: lucienne
     restart: always
     ports:
       - "5432:5432"
@@ -15,7 +15,7 @@ services:
     container_name: go_app_container 
     env_file: .env
     ports:
-      - "80:9090"
+      - "${APP_PORT}:${APP_PORT}"
     depends_on:
       - postgres 
     restart: always
