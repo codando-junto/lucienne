@@ -2,4 +2,4 @@
 .env
 tmp
 node_modules
-dist
+public
