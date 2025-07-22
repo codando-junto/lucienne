@@ -10,12 +10,9 @@ services:
     ports:
       - "5432:5432"
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: go_app_container
-    volumes:
-      - ./:/app 
+    image: gomex/luciene:latest
+    platform: linux/amd64
+    container_name: go_app_container 
     env_file: .env
     ports:
       - "${APP_PORT}:${APP_PORT}"
