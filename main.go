@@ -6,6 +6,7 @@ import (
 	"lucienne/internal/handlers"
 	"lucienne/internal/infra/database"
 	"lucienne/internal/infra/repository"
+	"lucienne/pkg/renderer"
 	"net/http"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -27,7 +28,10 @@ const (
 func main() {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/health", HealthHandler).Methods("GET")
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		renderer.HTML.Render(w, "home.html", nil)
+	}).Methods("GET")
+	r.HandleFunc("/health", handlers.HealthHandler).Methods("GET")
 	r.PathPrefix(AssetsServerPath).Handler(http.StripPrefix(AssetsServerPath, http.FileServer(http.Dir(CompiledAssetsPath))))
 
 	log.Println("Rodando na porta: " + config.EnvVariables.AppPort)
@@ -48,6 +52,7 @@ func init() {
 	config.EnvVariables.Load()
 	config.Application.Configure(config.EnvVariables.AppEnv)
 	config.Assets.Configure(AssetsPath, CompiledAssetsPath, AssetsBuildFilePath)
+	renderer.HTML.Configure(AssetsServerPath, config.Application.RootPath+"/"+ViewsPath, config.Assets.AssetsMapping)
 	database.ConnectDB()
 
 	m, err := migrate.New(
