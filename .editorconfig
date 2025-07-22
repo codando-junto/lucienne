@@ -1,0 +1,17 @@
+[*]
+insert_final_newline = true
+trim_trailing_whitespace = true
+charset = utf-8
+end_of_line = lf
+
+[*.go]
+indent_style = tab
+indent_size = tab
+
+[*.js]
+indent_style = space
+indent_size = 2
+
+[*.scss]
+indent_style = space
+indent_size = 2
