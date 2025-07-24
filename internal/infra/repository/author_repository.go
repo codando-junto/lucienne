@@ -12,14 +12,19 @@ import (
 // ErrAuthorAlreadyExists é retornado quando uma tentativa de criar um autor que já existe é feita.
 var ErrAuthorAlreadyExists = errors.New("author already exists")
 
+// ErrAuthorNotFound é retornado quando um autor não é encontrado para uma operação.
+var ErrAuthorNotFound = errors.New("autor não encontrado")
+
 const (
 	// Não precisamos retornar o ID por enquanto, então usamos um INSERT simples.
 	createAuthorQuery = `INSERT INTO authors (name) VALUES ($1)`
+	updateAuthorQuery = `UPDATE authors SET name = $1 WHERE id = $2`
 )
 
 // AuthorRepository define a interface para as operações de autor no banco de dados.
 type AuthorRepository interface {
 	CreateAuthor(ctx context.Context, author *domain.Author) error
+	UpdateAuthor(ctx context.Context, id int, name string) error
 }
 
 // PostgresAuthorRepository é a implementação do AuthorRepository para o PostgreSQL.
@@ -44,6 +49,19 @@ func (r *PostgresAuthorRepository) CreateAuthor(ctx context.Context, author *dom
 		}
 		// Se for outro tipo de erro, retorna o erro original.
 		return err
+	}
+	return nil
+}
+
+// UpdateAuthor atualiza o nome de um autor existente no banco de dados.
+func (r *PostgresAuthorRepository) UpdateAuthor(ctx context.Context, id int, name string) error {
+	res, err := database.Conn.Exec(ctx, updateAuthorQuery, name, id)
+	if err != nil {
+		return err
+	}
+	rows := res.RowsAffected()
+	if rows == 0 {
+		return ErrAuthorNotFound
 	}
 	return nil
 }

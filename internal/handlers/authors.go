@@ -10,8 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"lucienne/internal/infra/repository"
-
 	"github.com/gorilla/mux"
 )
 
@@ -54,7 +52,7 @@ func (h *AuthorHandler) UpdateAuthor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = repository.UpdateAuthor(id, name)
+	err = h.repo.UpdateAuthor(r.Context(), id, name)
 	if errors.Is(err, repository.ErrAuthorNotFound) {
 		http.Error(w, "Autor não encontrado", http.StatusNotFound)
 		return
@@ -64,6 +62,9 @@ func (h *AuthorHandler) UpdateAuthor(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Erro ao atualizar autor", http.StatusInternalServerError)
 		return
 	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Autor atualizado com sucesso"))
 }
 
 func (h *AuthorHandler) CreateAuthorHandler(w http.ResponseWriter, r *http.Request) {

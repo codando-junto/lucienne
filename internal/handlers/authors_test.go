@@ -1,26 +1,39 @@
-package handlers
+package handlers_test
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"lucienne/internal/domain"
-	"lucienne/internal/infra/repository"
+	"lucienne/internal/handlers"
+	"lucienne/internal/infra/repository" // Importado para usar o erro customizado
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/gorilla/mux"
 )
 
-// MockAuthorRepository é a nossa implementação falsa do repositório para testes.
+// MockAuthorRepository é uma implementação falsa do repositório para testes unitários dos handlers.
 type MockAuthorRepository struct {
 	CreateAuthorFunc func(ctx context.Context, author *domain.Author) error
+	UpdateAuthorFunc func(ctx context.Context, id int, name string) error
 }
 
-// Implementamos os métodos da interface AuthorRepository.
+// CreateAuthor implementa a interface repository.AuthorRepository.
 func (m *MockAuthorRepository) CreateAuthor(ctx context.Context, author *domain.Author) error {
 	if m.CreateAuthorFunc != nil {
 		return m.CreateAuthorFunc(ctx, author)
+	}
+	return nil
+}
+
+// UpdateAuthor implementa a interface repository.AuthorRepository.
+func (m *MockAuthorRepository) UpdateAuthor(ctx context.Context, id int, name string) error {
+	if m.UpdateAuthorFunc != nil {
+		return m.UpdateAuthorFunc(ctx, id, name)
 	}
 	return nil
 }
@@ -79,7 +92,7 @@ func TestCreateAuthorHandler(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Configuração do teste
-			handler := NewAuthorHandler(tc.mockRepo)
+			handler := handlers.NewAuthorHandler(tc.mockRepo)
 
 			formData := url.Values{}
 			formData.Set("name", tc.formName)
@@ -104,41 +117,94 @@ func TestCreateAuthorHandler(t *testing.T) {
 	}
 }
 
-func TestUpdateAuthor(t *testing.T) {
-	database.ConnectDB()
-
-	var id int
-	err := database.Conn.QueryRow(context.Background(), "INSERT INTO authors (name) VALUES ($1) RETURNING id", "Nome Antigo").Scan(&id)
-	if err != nil {
-		t.Fatalf("erro ao inserir autor de teste: %v", err)
+func TestUpdateAuthorHandler(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		authorID             string // ID na URL, como string
+		formName             string
+		mockRepo             *MockAuthorRepository
+		expectedStatusCode   int
+		expectedBodyContains string
+	}{
+		{
+			name:     "deve atualizar um autor com sucesso",
+			authorID: "1",
+			formName: "Nome Atualizado",
+			mockRepo: &MockAuthorRepository{
+				UpdateAuthorFunc: func(ctx context.Context, id int, name string) error {
+					if id == 1 && name == "Nome Atualizado" {
+						return nil // Sucesso
+					}
+					return errors.New("mock recebeu dados inesperados")
+				},
+			},
+			expectedStatusCode:   http.StatusOK,
+			expectedBodyContains: "Autor atualizado com sucesso",
+		},
+		{
+			name:     "deve retornar 404 se o autor não for encontrado",
+			authorID: "999",
+			formName: "Nome Qualquer",
+			mockRepo: &MockAuthorRepository{
+				UpdateAuthorFunc: func(ctx context.Context, id int, name string) error {
+					return repository.ErrAuthorNotFound // Simula erro do repositório
+				},
+			},
+			expectedStatusCode:   http.StatusNotFound,
+			expectedBodyContains: "Autor não encontrado",
+		},
+		{
+			name:                 "deve retornar 400 se o nome estiver em branco",
+			authorID:             "1",
+			formName:             "  ",
+			mockRepo:             &MockAuthorRepository{}, // O repositório não será chamado
+			expectedStatusCode:   http.StatusBadRequest,
+			expectedBodyContains: `O campo "name" é obrigatório`,
+		},
+		{
+			name:                 "deve retornar 400 se o ID for inválido",
+			authorID:             "abc", // ID não numérico
+			formName:             "Nome Válido",
+			mockRepo:             &MockAuthorRepository{}, // O repositório não será chamado
+			expectedStatusCode:   http.StatusBadRequest,
+			expectedBodyContains: "ID inválido",
+		},
+		{
+			name:     "deve retornar 500 em caso de erro genérico do repositório",
+			authorID: "1",
+			formName: "Nome Válido",
+			mockRepo: &MockAuthorRepository{
+				UpdateAuthorFunc: func(ctx context.Context, id int, name string) error {
+					return errors.New("erro de disco no banco de dados")
+				},
+			},
+			expectedStatusCode:   http.StatusInternalServerError,
+			expectedBodyContains: "Erro ao atualizar autor",
+		},
 	}
-	defer database.Conn.Exec(context.Background(), "DELETE FROM authors WHERE id = $1", id)
 
-	form := url.Values{}
-	form.Set("name", "Novo Nome")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			handler := handlers.NewAuthorHandler(tc.mockRepo)
+			formData := url.Values{}
+			formData.Set("name", tc.formName)
+			req := httptest.NewRequest("PATCH", fmt.Sprintf("/authors/%s", tc.authorID), strings.NewReader(formData.Encode()))
+			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			rr := httptest.NewRecorder()
 
-	req := httptest.NewRequest("PATCH", fmt.Sprintf("/authors/%d", id), strings.NewReader(form.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	rec := httptest.NewRecorder()
+			// O handler UpdateAuthor depende do mux para extrair o ID da URL.
+			// Portanto, precisamos criar um roteador para o teste.
+			router := mux.NewRouter()
+			router.HandleFunc("/authors/{id}", handler.UpdateAuthor)
+			router.ServeHTTP(rr, req)
 
-	router := mux.NewRouter()
-	router.HandleFunc("/authors/{id}", handlers.UpdateAuthor).Methods("PATCH")
-	router.ServeHTTP(rec, req)
+			if status := rr.Code; status != tc.expectedStatusCode {
+				t.Errorf("handler retornou status code errado: got %v want %v", status, tc.expectedStatusCode)
+			}
 
-	if rec.Code != http.StatusOK {
-		t.Errorf("esperado status 200, recebido %d", rec.Code)
-	}
-
-	if !strings.Contains(rec.Body.String(), "Autor atualizado com sucesso") {
-		t.Errorf("mensagem de sucesso não encontrada. Resposta: %s", rec.Body.String())
-	}
-
-	var name string
-	err = database.Conn.QueryRow(context.Background(), "SELECT name FROM authors WHERE id = $1", id).Scan(&name)
-	if err != nil {
-		t.Fatalf("erro ao consultar autor atualizado: %v", err)
-	}
-	if name != "Novo Nome" {
-		t.Errorf("esperado nome 'Novo Nome', recebido '%s'", name)
+			if !strings.Contains(rr.Body.String(), tc.expectedBodyContains) {
+				t.Errorf("handler retornou corpo inesperado: got %q want to contain %q", rr.Body.String(), tc.expectedBodyContains)
+			}
+		})
 	}
 }

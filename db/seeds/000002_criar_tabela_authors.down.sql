@@ -1,1 +1,0 @@
--- Sem seed para authors
