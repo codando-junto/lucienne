@@ -1,0 +1,5 @@
+{
+	"my_origin_assets/some_dir_1/some-file.js": "test/config/test_compiled_path/some_dir_1/first-file-AJFJEO.js",
+	"my_origin_assets/some_dir_2/another-file.scss": "test/config/test_compiled_path/some_dir_2/another-css-AJITD2.css",
+	"my_origin_assets/random-file.jpg": "test/config/test_compiled_path/random-file-GDSJOQR.jpg"
+}

@@ -7,7 +7,7 @@ Essa API será responsável gerenciar biblioteca de livros.
 
 Certifique-se de ter o seguinte instalado em sua máquina:
 
-- [Go](https://golang.org/dl/) (versão 1.18 ou superior)
+- [Go](https://golang.org/dl/) (versão 1.23 ou superior)
 - Git
 
 ## Como executar o projeto localmente
@@ -28,7 +28,7 @@ go_app_container    | Servidor rodando na porta 9090
 
 O ngrok é uma ferramenta que cria túneis seguros para expor localmente servidores ou aplicações à internet, permitindo acesso remoto por meio de URLs públicas.
 
-Com o ngrok você pode expor a porta 8080 usando seu código da sua máquina e ele pode ser acessado por outra pessoa, pela internet.
+Com o ngrok você pode expor a porta 9090 usando seu código da sua máquina e ele pode ser acessado por outra pessoa, pela internet.
 
 **Observação importante**: Lembre-se que a internet é um local inseguro, e expor suas portas por muito tempo sem a devida segurança é um risco muito alto. Esse aplicativo deve ser usado somente para testes simples e por pouco período.
 
@@ -52,19 +52,22 @@ Exemplo de resposta:
 Código de status: 200 OK
 Corpo da resposta: vazio
 
-### Rota POST /authors
+## Como Rodar os Testes Unitários
 
-Descrição: Cria um novo autor. Requer dados de formulário (`application/x-www-form-urlencoded`) com o campo `name`.
+Para executar todos os testes unitários do projeto, use o comando:
+
+```bash
+go test -v ./...
+
+### Testando a Rota POST /authors
+
+Descrição: A rota /authors permite a criação de um novo autor. Para isso, você deve enviar dados de formulário (`application/x-www-form-urlencoded`) com o campo name.
 
 
 **Exemplo de sucesso (Nome válido):**
 
 ```bash
-curl -i -X POST \
-
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "name=Teste Autor" \
-  http://localhost:9090/authors
+curl -X POST -d "name=Teste Autor" http://localhost:9090/authors
 ```
 *   **Resposta esperada (Status `201 Created`):** `Autor criado com sucesso: Teste Autor`
 
@@ -72,17 +75,14 @@ curl -i -X POST \
 **Exemplo de falha (Nome vazio):**
 
 ```bash
-curl -i -X POST \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "name=  " \
-  http://localhost:9090/authors
+curl -X POST -d "name= "" " http://localhost:9090/authors
 ```
 *   **Resposta esperada (Status `400 Bad Request`):** `O campo "name" é obrigatório`
 
 ## 5. Estrutura de diretórios da aplicação
 Nós entendemos que o Go, juntamente com a comunidade, não são opinativos quanto a estrutura de diretórios a seguir. Então, compilamos uma estrutura inicial e com o tempo e conforme a aplicação
 e o time forem amadurecendo, ela crescerá junto. Mas atualmente temos:
-```  
+```
   |- cmd: pasta de comandos
   |- db: pasta raiz para scripts de banco
       |- migrations: pasta com as migrações do banco

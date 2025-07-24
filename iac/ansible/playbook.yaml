@@ -20,7 +20,7 @@
         src: ../../{{ item }}
         dest: /opt/app/{{ item }}
         mode: '0644'
-      loop: 
+      loop:
         - docker-compose.yml
         - local-compose-override.yml
         - .env

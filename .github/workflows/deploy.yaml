@@ -35,7 +35,7 @@ jobs:
         mkdir -p ~/.ssh/
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key.pem
         chmod 600 ~/.ssh/deploy_key.pem
-  
+
     - name: Deploy using Ansible
       run: |
         echo "${{ env.ENV_VARS }}" > .env

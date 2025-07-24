@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS authors(
+    id serial PRIMARY KEY,
+    name VARCHAR (100) NOT NULL UNIQUE
+);
