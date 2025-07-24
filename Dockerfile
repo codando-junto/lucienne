@@ -4,12 +4,16 @@ FROM golang:1.24
 # Defina o diretório de trabalho dentro do container
 WORKDIR /app
 
-RUN apt-get update ; apt-get install coreutils nodejs -y
+RUN apt-get update ; apt-get install coreutils nodejs npm -y
+
+COPY package*.json ./
+RUN npm install
 
 # Faça cache das dependências copiando go.mod e go.sum primeiro
 COPY go.* ./
 RUN go mod download
 RUN go install github.com/air-verse/air@latest
+
 # Copie o restante do código-fonte da aplicação
 COPY . .
 
