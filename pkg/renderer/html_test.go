@@ -4,13 +4,15 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path"
 	"strings"
 	"testing"
 )
 
 func TestRederingHTML(t *testing.T) {
-	HTML.Configure("/assets", "./", map[string]string{"some_path/something.asset": "some_path/other_path/random.asset"})
-	teardown := setupHTMLFile("./test.html")
+	tempDir := t.TempDir()
+	HTML.Configure("/assets", tempDir, map[string]string{"some_path/something.asset": "some_path/other_path/random.asset"})
+	setupHTMLFile(t, path.Join(tempDir, "test.html"))
 
 	htmlBuffer := bytes.NewBuffer([]byte(""))
 	HTML.Render(htmlBuffer, "test.html", map[string]string{"TestContent": "some content"})
@@ -27,11 +29,11 @@ func TestRederingHTML(t *testing.T) {
 			t.Error("Expected: contains rendered asset path \"/assets/some_path/other_path/random.asset\", got: nothing")
 		}
 	})
-
-	teardown(t)
 }
 
-func setupHTMLFile(filePath string) func(t *testing.T) {
+func setupHTMLFile(t testing.TB, filePath string) {
+	t.Helper()
+
 	htmlContent := []byte(`
 		<html>
 			<head>
@@ -44,9 +46,11 @@ func setupHTMLFile(filePath string) func(t *testing.T) {
 		</html>
 	`)
 
-	os.WriteFile(filePath, htmlContent, 0644)
-
-	return func(t *testing.T) {
-		os.Remove(filePath)
+	if err := os.WriteFile(filePath, htmlContent, 0644); err != nil {
+		t.Fatalf("failed to write test HTML file: %v'", err)
 	}
+
+	t.Cleanup(func() {
+		os.Remove(filePath)
+	})
 }

@@ -18,6 +18,7 @@ var HTML templateConfig = templateConfig{
 }
 
 func (tc *templateConfig) Configure(assetsUrlPath string, viewsDir string, assetsMapping map[string]string) {
+	fmt.Println(viewsDir)
 	tc.assetsUrlPath = assetsUrlPath
 	tc.viewsDir = viewsDir
 	tc.assetsMapping = assetsMapping
@@ -27,7 +28,7 @@ func (tc templateConfig) Render(writer io.Writer, view string, data any) {
 	baseFile := path.Base(view)
 	tmpl, err := template.New(baseFile).Funcs(template.FuncMap{
 		"assetsPath": tc.getPathToAssets,
-	}).ParseFiles(tc.viewsDir + "/" + view)
+	}).ParseFiles(path.Join(tc.viewsDir, view))
 
 	if err != nil {
 		fmt.Println("Error on rendering HTML:\n" + err.Error())
@@ -37,5 +38,5 @@ func (tc templateConfig) Render(writer io.Writer, view string, data any) {
 }
 
 func (tc templateConfig) getPathToAssets(filepath string) string {
-	return HTML.assetsUrlPath + "/" + HTML.assetsMapping[filepath]
+	return path.Join(HTML.assetsUrlPath, HTML.assetsMapping[filepath])
 }
