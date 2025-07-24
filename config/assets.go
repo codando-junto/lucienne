@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -21,9 +22,9 @@ var Assets = assetsConfig{}
 func (assets *assetsConfig) Configure(assetsPath string, compiledAssetsPath string, buildFilePath string) {
 	assets.OriginRelativePath = removeEndingSlash(assetsPath)
 	assets.CompiledRelativePath = removeEndingSlash(compiledAssetsPath)
-	assets.OriginFullPath = Application.RootPath + "/" + assets.OriginRelativePath
-	assets.CompiledFullPath = Application.RootPath + "/" + assets.CompiledRelativePath
-	assets.BuildFilePath = Application.RootPath + "/" + buildFilePath
+	assets.OriginFullPath = path.Join(Application.RootPath, assets.OriginRelativePath)
+	assets.CompiledFullPath = path.Join(Application.RootPath, assets.CompiledRelativePath)
+	assets.BuildFilePath = path.Join(Application.RootPath, buildFilePath)
 	assets.AssetsMapping = loadAssetsMapping()
 }
 
