@@ -8,6 +8,7 @@ import (
 	"lucienne/internal/infra/repository"
 	"lucienne/pkg/renderer"
 	"net/http"
+	"path"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -49,7 +50,7 @@ func init() {
 	config.EnvVariables.Load()
 	config.Application.Configure(config.EnvVariables.AppEnv)
 	config.Assets.Configure(AssetsPath, CompiledAssetsPath, AssetsBuildFilePath)
-	renderer.HTML.Configure(AssetsServerPath, config.Application.RootPath+"/"+ViewsPath, config.Assets.AssetsMapping)
+	renderer.HTML.Configure(AssetsServerPath, path.Join(config.Application.RootPath, ViewsPath), config.Assets.AssetsMapping)
 	database.ConnectDB()
 
 	m, err := migrate.New(
