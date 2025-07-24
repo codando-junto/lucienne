@@ -10,6 +10,8 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/gorilla/mux"
 )
 
 // MockAuthorRepository é a nossa implementação falsa do repositório para testes.
@@ -23,6 +25,39 @@ func (m *MockAuthorRepository) CreateAuthor(ctx context.Context, author *domain.
 		return m.CreateAuthorFunc(ctx, author)
 	}
 	return nil
+}
+
+func TestNewAuthorForm(t *testing.T) {
+
+	t.Run("deve retornar status 200 e o placeholder do formulário", func(t *testing.T) {
+		handler := NewAuthorHandler(nil)
+
+		// Cria uma nova requisição HTTP do tipo GET para a rota /authors/new.
+		req := httptest.NewRequest("GET", "/authors/new", nil)
+
+		rr := httptest.NewRecorder()
+
+		// Precisamos de um roteador para despachar a requisição para o handler correto.
+		// Aqui, criamos um novo roteador usando o mux.
+		router := mux.NewRouter()
+		// Define as rotas do AuthorHandler no roteador.
+		handler.DefineAuthors(router)
+
+		// Serve a requisição HTTP usando o roteador, que irá chamar o handler apropriado.
+		router.ServeHTTP(rr, req)
+
+		// Verifica se o código de status retornado é 200 (OK).
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("handler retornou status code errado: got %v want %v", status, http.StatusOK)
+		}
+
+		// Define o corpo esperado da resposta.
+		expectedBody := "o formulário de criação de autor será exibido aqui"
+		// Verifica se o corpo da resposta contém a string esperada.
+		if !strings.Contains(rr.Body.String(), expectedBody) {
+			t.Errorf("handler retornou corpo inesperado: got %q want to contain %q", rr.Body.String(), expectedBody)
+		}
+	})
 }
 
 func TestCreateAuthorHandler(t *testing.T) {
@@ -80,17 +115,19 @@ func TestCreateAuthorHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Configuração do teste
 			handler := NewAuthorHandler(tc.mockRepo)
+			router := mux.NewRouter()
+			handler.DefineAuthors(router)
 
 			formData := url.Values{}
 			formData.Set("name", tc.formName)
 
 			req := httptest.NewRequest("POST", "/authors", strings.NewReader(formData.Encode()))
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
 			rr := httptest.NewRecorder()
 
 			// Execução
-			handler.CreateAuthorHandler(rr, req)
+			// Usamos o roteador para servir a requisição, o que é mais próximo do comportamento real.
+			router.ServeHTTP(rr, req)
 
 			// Verificação
 			if status := rr.Code; status != tc.expectedStatusCode {
