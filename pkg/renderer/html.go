@@ -1,7 +1,6 @@
 package renderer
 
 import (
-	"fmt"
 	"html/template"
 	"io"
 	"path"
@@ -18,23 +17,24 @@ var HTML templateConfig = templateConfig{
 }
 
 func (tc *templateConfig) Configure(assetsUrlPath string, viewsDir string, assetsMapping map[string]string) {
-	fmt.Println(viewsDir)
 	tc.assetsUrlPath = assetsUrlPath
 	tc.viewsDir = viewsDir
 	tc.assetsMapping = assetsMapping
 }
 
-func (tc templateConfig) Render(writer io.Writer, view string, data any) {
+func (tc templateConfig) Render(writer io.Writer, view string, data any) error {
 	baseFile := path.Base(view)
 	tmpl, err := template.New(baseFile).Funcs(template.FuncMap{
 		"assetsPath": tc.getPathToAssets,
 	}).ParseFiles(path.Join(tc.viewsDir, view))
 
 	if err != nil {
-		fmt.Println("Error on rendering HTML:\n" + err.Error())
+		return err
 	}
 
 	tmpl.Execute(writer, data)
+
+	return nil
 }
 
 func (tc templateConfig) getPathToAssets(filepath string) string {
