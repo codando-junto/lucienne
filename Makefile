@@ -1,9 +1,12 @@
 .PHONY: dev down logs ps restart
 
+start:
+	docker compose -f docker-compose.yml -f local-compose-override.yml up --build -d
+
 dev:
 	docker compose stop
 	docker compose rm -f
-	docker compose -f docker-compose.yml -f local-compose-override.yml up --build
+	make start
 
 down:
 	docker compose down
@@ -15,4 +18,4 @@ ps:
 	docker compose ps
 
 restart:
-	make down && docker compose up --build -d
+	make down && make start
