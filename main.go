@@ -30,7 +30,10 @@ func main() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		renderer.HTML.Render(w, "home.html", nil)
+		if err := renderer.HTML.Render(w, "home.html", nil); err != nil {
+			w.WriteHeader(500)
+			w.Write([]byte("Ocorreu um erro ao renderizar a página"))
+		}
 	}).Methods("GET")
 	r.HandleFunc("/health", handlers.HealthHandler).Methods("GET")
 	r.PathPrefix(AssetsServerPath).Handler(http.StripPrefix(AssetsServerPath, http.FileServer(http.Dir(CompiledAssetsPath))))
