@@ -32,9 +32,7 @@ func (tc templateConfig) Render(writer io.Writer, view string, data any) error {
 		return err
 	}
 
-	tmpl.Execute(writer, data)
-
-	return nil
+	return tmpl.Execute(writer, data)
 }
 
 func (tc templateConfig) getPathToAssets(filepath string) string {
