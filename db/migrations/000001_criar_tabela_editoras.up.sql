@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS editoras(
-    editora_id serial PRIMARY KEY,
-    nome VARCHAR (100) NOT NULL
+CREATE TABLE IF NOT EXISTS publishers(
+    id serial PRIMARY KEY,
+    name VARCHAR (100) NOT NULL
 );
