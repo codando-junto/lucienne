@@ -2,17 +2,21 @@ package repository_test
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"lucienne/config"
 	"lucienne/internal/infra/database"
 	"lucienne/internal/infra/repository"
 	"testing"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -25,18 +29,38 @@ const (
 func setupTestDBAndMigrate(t *testing.T) func() {
 	t.Helper()
 	t.Setenv("APP_ENV", "test")
-	config.EnvVariables.Load()
-	// A conexão principal agora usará a URL de teste
-	config.EnvVariables.DatabaseURL = config.EnvVariables.DatabaseTestURL
+
+	ctx := context.Background()
+	req := testcontainers.ContainerRequest{
+		Image:        "postgres:15",
+		Env:          map[string]string{"POSTGRES_USER": "postgres", "POSTGRES_PASSWORD": "postgres", "POSTGRES_DB": "lucienne_test"},
+		ExposedPorts: []string{"5432/tcp"},
+		WaitingFor:   wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(10 * time.Second),
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.NoError(t, err, "Falha ao iniciar o container do banco de dados")
+
+	// Obtém o host e a porta mapeada dinamicamente do container.
+	endpoint, err := container.Endpoint(ctx, "")
+	require.NoError(t, err, "Falha ao obter o endpoint do container")
+
+	// Constrói a URL de conexão completa usando o endpoint dinâmico.
+	databaseURL := fmt.Sprintf("postgres://postgres:postgres@%s/lucienne_test?sslmode=disable", endpoint)
+
+	// AGORA, com o container rodando e a URL dinâmica em mãos, nós configuramos e conectamos ao banco.
+	config.EnvVariables.DatabaseURL = databaseURL
 	database.ConnectDB()
 
 	// Caminho para as migrações relativo ao arquivo de teste
 	migrationsPath := "file://../../../db/migrations"
 
-	m, err := migrate.New(migrationsPath, config.EnvVariables.DatabaseTestURL)
+	// Usa a URL dinâmica para as migrações.
+	m, err := migrate.New(migrationsPath, databaseURL)
 	require.NoError(t, err, "Falha ao criar instância de migração")
 
-	// Aplica as migrações
 	err = m.Up()
 	if err != nil && err != migrate.ErrNoChange {
 		require.NoError(t, err, "Falha ao aplicar migrações (Up)")
@@ -52,6 +76,10 @@ func setupTestDBAndMigrate(t *testing.T) func() {
 		require.NoError(t, sourceErr)
 		require.NoError(t, dbErr)
 		database.Conn.Close(context.Background())
+
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
 	}
 }
 
