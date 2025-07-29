@@ -3,6 +3,7 @@ package config
 import (
 	"maps"
 	"os"
+	"path"
 	"testing"
 )
 
@@ -44,7 +45,7 @@ func TestAssetsConfigure(t *testing.T) {
 
 	t.Run("sets right value for BuildFile", func(t *testing.T) {
 		Assets.Configure("my_origin_assets/", "test/config/test_compiled_path/", "test/config/test_compiled_path/test-build.json")
-		expectedResult := rootDir + "/test/config/test_compiled_path/test-build.json"
+		expectedResult := path.Join(rootDir, "/test/config/test_compiled_path/test-build.json")
 		if expectedResult != Assets.BuildFilePath {
 			t.Errorf("Expected: %s, Got: %s", expectedResult, Assets.BuildFilePath)
 		}
@@ -52,7 +53,7 @@ func TestAssetsConfigure(t *testing.T) {
 
 	t.Run("sets right OriginFullPath", func(t *testing.T) {
 		Assets.Configure("my_origin_assets/", "test/config/test_compiled_path/", "test/config/test_compiled_path/test-build.json")
-		expectedResult := rootDir + "/my_origin_assets"
+		expectedResult := path.Join(rootDir, "/my_origin_assets")
 		if expectedResult != Assets.OriginFullPath {
 			t.Errorf("Expected: %s, Got: %s", expectedResult, Assets.OriginFullPath)
 		}
@@ -60,7 +61,7 @@ func TestAssetsConfigure(t *testing.T) {
 
 	t.Run("removes ending slash from OriginFullPath", func(t *testing.T) {
 		Assets.Configure("my_origin_assets/", "test/config/test_compiled_path/", "test/config/test_compiled_path/test-build.json")
-		expectedResult := rootDir + "/my_origin_assets"
+		expectedResult := path.Join(rootDir, "/my_origin_assets")
 		if expectedResult != Assets.OriginFullPath {
 			t.Errorf("Expected: %s, Got: %s", expectedResult, Assets.OriginFullPath)
 		}
@@ -68,7 +69,7 @@ func TestAssetsConfigure(t *testing.T) {
 
 	t.Run("sets right CompiledFullPath", func(t *testing.T) {
 		Assets.Configure("my_origin_assets/", "test/config/test_compiled_path/", "test/config/test_compiled_path/test-build.json")
-		expectedResult := rootDir + "/test/config/test_compiled_path"
+		expectedResult := path.Join(rootDir, "/test/config/test_compiled_path")
 		if expectedResult != Assets.CompiledFullPath {
 			t.Errorf("Expected: %s, Got: %s", expectedResult, Assets.CompiledFullPath)
 		}
@@ -76,7 +77,7 @@ func TestAssetsConfigure(t *testing.T) {
 
 	t.Run("removes ending slash from CompiledFullPath", func(t *testing.T) {
 		Assets.Configure("my_origin_assets/", "test/config/test_compiled_path/", "test/config/test_compiled_path/test-build.json")
-		expectedResult := rootDir + "/test/config/test_compiled_path"
+		expectedResult := path.Join(rootDir, "/test/config/test_compiled_path")
 		if expectedResult != Assets.CompiledFullPath {
 			t.Errorf("Expected: %s, Got: %s", expectedResult, Assets.CompiledFullPath)
 		}

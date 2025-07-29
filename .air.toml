@@ -11,8 +11,9 @@ tmp_dir = "tmp"
   cmd = "go build -o ./tmp/main main.go"
   bin = "tmp/main"         # Caminho do binário gerado
   delay = 1000             # Espera 1s após mudança
-  include_ext = ["go", "json"]
+  include_ext = ["go", "json", "css", "js", "ico", "png", "jpg", "jpeg"]
   include_dir = ["cmd", "config", "db", "internal", "pkg", "public/assets"]
+  include_file = ["main.go"]
   log = "build-errors.log"
 
 [log]

@@ -106,6 +106,8 @@ func TestCreateAuthorHandler(t *testing.T) {
 			// Execução
 			// Usamos o roteador para servir a requisição, o que é mais próximo do comportamento real.
 			router.ServeHTTP(rr, req)
+			// Usamos o roteador para servir a requisição, o que é mais próximo do comportamento real.
+			router.ServeHTTP(rr, req)
 
 			// Verificação
 			if status := rr.Code; status != tc.expectedStatusCode {
