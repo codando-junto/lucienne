@@ -24,8 +24,8 @@ func NewPublisherHandler(repo repository.PublisherRepository) *PublisherHandler 
 
 // DefinePublishers registra as rotas de publisher no roteador.
 func (h *PublisherHandler) DefinePublishers(router *mux.Router) {
-	PublishersRouter := router.PathPrefix("/publishers").Subrouter()
-	PublishersRouter.HandleFunc("", h.CreatePublisherHandler).Methods("POST")
+	publishersRouter := router.PathPrefix("/publishers").Subrouter()
+	publishersRouter.HandleFunc("", h.CreatePublisherHandler).Methods("POST")
 }
 
 func (h *PublisherHandler) CreatePublisherHandler(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +52,7 @@ func (h *PublisherHandler) CreatePublisherHandler(w http.ResponseWriter, r *http
 		// Se o repositório retornar o erro de que o publisher já existe
 		//  retorna 409 Conflict.
 		if errors.Is(err, repository.ErrPublisherAlreadyExists) {
-			errorMessage := fmt.Sprintf("Erro: A editora '%s' já está cadastrada.", name)
+			errorMessage := fmt.Sprintf("Erro: A editora %q já está cadastrada.", name)
 			http.Error(w, errorMessage, http.StatusConflict)
 			return
 		}
