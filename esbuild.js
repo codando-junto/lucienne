@@ -55,14 +55,6 @@ async function buildDevelopmentAssets() {
 
   buildAndMapAssets(context);
   console.log("Assets built")
-
-  let { port } = await context.serve({
-    cors: {
-      origin: ['http://localhost:3000']
-    }
-  })
-
-  console.log(`ESBuild server started at port ${port}`)
 }
 
 async function buildProductionAssets() {
