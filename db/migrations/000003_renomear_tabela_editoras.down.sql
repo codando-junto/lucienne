@@ -1,3 +1,3 @@
-RENAME TABLE publishers TO editoras;
-RENAME COLUMN editoras.id TO editoras.editora_id;
-RENAME COLUMN editoras.name TO editoras.nome;
+ALTER TABLE publishers RENAME TO editoras;
+ALTER TABLE editoras RENAME COLUMN id TO editora_id;
+ALTER TABLE editoras RENAME COLUMN name TO nome;
