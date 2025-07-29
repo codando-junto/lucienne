@@ -93,17 +93,19 @@ func TestCreateAuthorHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Configuração do teste
 			handler := handlers.NewAuthorHandler(tc.mockRepo)
+			router := mux.NewRouter()
+			handler.DefineAuthors(router)
 
 			formData := url.Values{}
 			formData.Set("name", tc.formName)
 
 			req := httptest.NewRequest("POST", "/authors", strings.NewReader(formData.Encode()))
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
 			rr := httptest.NewRecorder()
 
 			// Execução
-			handler.CreateAuthorHandler(rr, req)
+			// Usamos o roteador para servir a requisição, o que é mais próximo do comportamento real.
+			router.ServeHTTP(rr, req)
 
 			// Verificação
 			if status := rr.Code; status != tc.expectedStatusCode {

@@ -26,8 +26,15 @@ func NewAuthorHandler(repo repository.AuthorRepository) *AuthorHandler {
 // DefineAuthors registra as rotas de autor no roteador.
 func (h *AuthorHandler) DefineAuthors(router *mux.Router) {
 	authorsRouter := router.PathPrefix("/authors").Subrouter()
+	authorsRouter.HandleFunc("/new", h.NewAuthorForm).Methods("GET")
 	authorsRouter.HandleFunc("/{id}", h.UpdateAuthor).Methods("PATCH")
 	authorsRouter.HandleFunc("", h.CreateAuthorHandler).Methods("POST")
+}
+
+// NewAuthorForm exibe o formulário para criar um novo autor.
+func (h *AuthorHandler) NewAuthorForm(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Rota GET /authors/new OK - o formulário de criação de autor será exibido aqui.\n"))
 }
 
 func (h *AuthorHandler) UpdateAuthor(w http.ResponseWriter, r *http.Request) {
