@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS publishers(
-    publisher_id serial PRIMARY KEY,
-    name VARCHAR (100) NOT NULL
+DROP TABLE IF EXISTS editoras(
+    editora_id serial PRIMARY KEY,
+    nome VARCHAR (100) NOT NULL
 );
