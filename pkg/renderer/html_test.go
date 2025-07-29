@@ -13,9 +13,8 @@ func TestRederingHTML(t *testing.T) {
 	HTML.Configure("/assets", tempDir, map[string]string{"some_path/something.asset": "some_path/other_path/random.asset"})
 	setupHTMLFile(t, path.Join(tempDir, "test.html"))
 
-	htmlBuffer := bytes.NewBuffer([]byte(""))
-
 	t.Run("render inner variables", func(t *testing.T) {
+		htmlBuffer := bytes.NewBuffer([]byte(""))
 		HTML.Render(htmlBuffer, "test.html", map[string]string{"TestContent": "some content"})
 		if !strings.Contains(htmlBuffer.String(), "some content") {
 			t.Error("Expected: contains rendered value \"some content\", got: nothing")
@@ -23,6 +22,7 @@ func TestRederingHTML(t *testing.T) {
 	})
 
 	t.Run("render asset path", func(t *testing.T) {
+		htmlBuffer := bytes.NewBuffer([]byte(""))
 		HTML.Render(htmlBuffer, "test.html", map[string]string{"TestContent": "some content"})
 		if !strings.Contains(htmlBuffer.String(), "<script src=/assets/some_path/other_path/random.asset></script>") {
 			t.Error("Expected: contains rendered asset path \"/assets/some_path/other_path/random.asset\", got: nothing")
@@ -30,6 +30,7 @@ func TestRederingHTML(t *testing.T) {
 	})
 
 	t.Run("returns an error when file does not exist", func(t *testing.T) {
+		htmlBuffer := bytes.NewBuffer([]byte(""))
 		err := HTML.Render(htmlBuffer, "missing.html", map[string]string{"TestContent": "some content"})
 		if err == nil {
 			t.Error("Expected: some error, got: nothing")
