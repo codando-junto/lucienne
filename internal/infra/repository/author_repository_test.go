@@ -6,49 +6,63 @@ import (
 	"lucienne/config"
 	"lucienne/internal/infra/database"
 	"lucienne/internal/infra/repository"
-	"os"
 	"testing"
 
-	"github.com/joho/godotenv"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestMain(m *testing.M) {
-	err := godotenv.Load(".env.test")
-	if err != nil {
-		log.Fatalf("Erro carregando .env.test: %v", err)
-	}
+const (
+	insertQuery = "INSERT INTO authors (name) VALUES ($1) RETURNING id"
+	deleteQuery = "DELETE FROM authors WHERE id = $1"
+	selectQuery = "SELECT name FROM authors WHERE id = $1"
+)
 
-	config.EnvVariables.Load()
-	if err != nil {
-		log.Fatalf("Erro carregando config.EnvVariables: %v", err)
-	}
-
-	database.ConnectDB()
-	if err != nil {
-		log.Fatalf("Erro ao conectar ao banco: %v", err)
-	}
-
-	os.Exit(m.Run())
-}
-
-// setupTestDB inicializa a conexão com o banco de dados para os testes.
-func setupTestDB(t *testing.T) {
+// setupTestDBAndMigrate inicializa a conexão com o banco de dados para os testes, aplica as migrações e retorna uma função de limpeza.
+func setupTestDBAndMigrate(t *testing.T) func() {
 	t.Helper()
 	t.Setenv("APP_ENV", "test")
 	config.EnvVariables.Load()
+	// A conexão principal agora usará a URL de teste
 	config.EnvVariables.DatabaseURL = config.EnvVariables.DatabaseTestURL
 	database.ConnectDB()
+
+	// Caminho para as migrações relativo ao arquivo de teste
+	migrationsPath := "file://../../../db/migrations"
+
+	m, err := migrate.New(migrationsPath, config.EnvVariables.DatabaseTestURL)
+	require.NoError(t, err, "Falha ao criar instância de migração")
+
+	// Aplica as migrações
+	err = m.Up()
+	if err != nil && err != migrate.ErrNoChange {
+		require.NoError(t, err, "Falha ao aplicar migrações (Up)")
+	}
+
+	// Retorna a função de limpeza (teardown)
+	return func() {
+		err = m.Down()
+		if err != nil && err != migrate.ErrNoChange {
+			log.Printf("AVISO: Falha ao reverter migrações (Down): %v", err)
+		}
+		sourceErr, dbErr := m.Close()
+		require.NoError(t, sourceErr)
+		require.NoError(t, dbErr)
+		database.Conn.Close(context.Background())
+	}
 }
 
 func TestPostgresAuthorRepository_UpdateAuthor(t *testing.T) {
 	// Só executa este teste se a flag -short não for usada
 	if testing.Short() {
-		t.Skip("Pulando teste de integração em modo 'short'.")
+		t.Skip("Pulando teste de integração com banco de dados em modo 'short'.")
 	}
 
-	setupTestDB(t)
+	cleanup := setupTestDBAndMigrate(t)
+	defer cleanup()
 	ctx := context.Background()
 	repo := repository.NewPostgresAuthorRepository()
 
@@ -57,12 +71,12 @@ func TestPostgresAuthorRepository_UpdateAuthor(t *testing.T) {
 		// 1. Inserir um autor para o teste
 		var authorID int
 		originalName := "Autor Original Para Teste"
-		err := database.Conn.QueryRow(ctx, "INSERT INTO authors (name) VALUES ($1) RETURNING id", originalName).Scan(&authorID)
+		err := database.Conn.QueryRow(ctx, insertQuery, originalName).Scan(&authorID)
 		require.NoError(t, err, "Falha ao inserir autor para o teste de atualização")
 
 		// Garante que o autor de teste seja removido no final
 		defer func() {
-			_, err := database.Conn.Exec(ctx, "DELETE FROM authors WHERE id = $1", authorID)
+			_, err := database.Conn.Exec(ctx, deleteQuery, authorID)
 			if err != nil {
 				log.Printf("AVISO: Falha ao limpar autor de teste com ID %d: %v", authorID, err)
 			}
@@ -75,7 +89,7 @@ func TestPostgresAuthorRepository_UpdateAuthor(t *testing.T) {
 
 		// 3. Verificar se o nome foi realmente atualizado no banco
 		var updatedName string
-		err = database.Conn.QueryRow(ctx, "SELECT name FROM authors WHERE id = $1", authorID).Scan(&updatedName)
+		err = database.Conn.QueryRow(ctx, selectQuery, authorID).Scan(&updatedName)
 		require.NoError(t, err, "Falha ao buscar autor atualizado para verificação")
 		assert.Equal(t, newName, updatedName, "O nome do autor no banco de dados não corresponde ao esperado após a atualização")
 	})
