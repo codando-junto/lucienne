@@ -1,8 +1,8 @@
 package renderer
 
 import (
+	"bytes"
 	"html/template"
-	"io"
 	"path"
 )
 
@@ -22,17 +22,22 @@ func (tc *templateConfig) Configure(assetsUrlPath string, viewsDir string, asset
 	tc.assetsMapping = assetsMapping
 }
 
-func (tc templateConfig) Render(writer io.Writer, view string, data any) error {
+func (tc templateConfig) Render(view string, data any) ([]byte, error) {
 	baseFile := path.Base(view)
 	tmpl, err := template.New(baseFile).Funcs(template.FuncMap{
 		"assetsPath": tc.getPathToAssets,
 	}).ParseFiles(path.Join(tc.viewsDir, view))
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return tmpl.Execute(writer, data)
+	buffer := &bytes.Buffer{}
+	if err = tmpl.Execute(buffer, data); err != nil {
+		return nil, err
+	}
+
+	return buffer.Bytes(), nil
 }
 
 func (tc templateConfig) getPathToAssets(filepath string) string {
