@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
+	tclog "github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -25,10 +26,16 @@ const (
 	selectQuery = "SELECT name FROM authors WHERE id = $1"
 )
 
+type testcontainerNoopLogger struct{}
+
+func (l testcontainerNoopLogger) Printf(_ string, _ ...any) {}
+
 // setupTestDBAndMigrate inicializa a conexão com o banco de dados para os testes, aplica as migrações e retorna uma função de limpeza.
 func setupTestDBAndMigrate(t *testing.T) func() {
 	t.Helper()
 	t.Setenv("APP_ENV", "test")
+
+	tclog.SetDefault(testcontainerNoopLogger{})
 
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
