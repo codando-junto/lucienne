@@ -15,7 +15,7 @@ var EnvVariables = envVariables{}
 type envVariables struct {
 	AppEnv      string `name:"APP_ENV" required:"true"`
 	AppPort     string `name:"APP_PORT" default:"9090"`
-	DatabaseURL string `name:"DATABASE_URL" default:"postgres://postgres:postgres@postgres:5432/biblioteca?sslmode=disable"`
+	DatabaseURL string `name:"DATABASE_URL" default:"postgres://postgres:postgres@postgres:5432/lucienne?sslmode=disable"`
 }
 
 func (envs *envVariables) Load() (envVar envVariables) {

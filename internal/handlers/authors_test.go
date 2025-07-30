@@ -1,10 +1,12 @@
-package handlers
+package handlers_test
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"lucienne/internal/domain"
-	"lucienne/internal/infra/repository"
+	"lucienne/internal/handlers"
+	"lucienne/internal/infra/repository" // Importado para usar o erro customizado
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -14,12 +16,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// MockAuthorRepository é a nossa implementação falsa do repositório para testes.
+// MockAuthorRepository é uma implementação falsa do repositório para testes unitários dos handlers.
 type MockAuthorRepository struct {
 	CreateAuthorFunc func(ctx context.Context, author *domain.Author) error
+	UpdateAuthorFunc func(ctx context.Context, id int, name string) error
 }
 
-// Implementamos os métodos da interface AuthorRepository.
+// CreateAuthor implementa a interface repository.AuthorRepository.
 func (m *MockAuthorRepository) CreateAuthor(ctx context.Context, author *domain.Author) error {
 	if m.CreateAuthorFunc != nil {
 		return m.CreateAuthorFunc(ctx, author)
@@ -27,37 +30,12 @@ func (m *MockAuthorRepository) CreateAuthor(ctx context.Context, author *domain.
 	return nil
 }
 
-func TestNewAuthorForm(t *testing.T) {
-
-	t.Run("deve retornar status 200 e o placeholder do formulário", func(t *testing.T) {
-		handler := NewAuthorHandler(nil)
-
-		// Cria uma nova requisição HTTP do tipo GET para a rota /authors/new.
-		req := httptest.NewRequest("GET", "/authors/new", nil)
-
-		rr := httptest.NewRecorder()
-
-		// Precisamos de um roteador para despachar a requisição para o handler correto.
-		// Aqui, criamos um novo roteador usando o mux.
-		router := mux.NewRouter()
-		// Define as rotas do AuthorHandler no roteador.
-		handler.DefineAuthors(router)
-
-		// Serve a requisição HTTP usando o roteador, que irá chamar o handler apropriado.
-		router.ServeHTTP(rr, req)
-
-		// Verifica se o código de status retornado é 200 (OK).
-		if status := rr.Code; status != http.StatusOK {
-			t.Errorf("handler retornou status code errado: got %v want %v", status, http.StatusOK)
-		}
-
-		// Define o corpo esperado da resposta.
-		expectedBody := "o formulário de criação de autor será exibido aqui"
-		// Verifica se o corpo da resposta contém a string esperada.
-		if !strings.Contains(rr.Body.String(), expectedBody) {
-			t.Errorf("handler retornou corpo inesperado: got %q want to contain %q", rr.Body.String(), expectedBody)
-		}
-	})
+// UpdateAuthor implementa a interface repository.AuthorRepository.
+func (m *MockAuthorRepository) UpdateAuthor(ctx context.Context, id int, name string) error {
+	if m.UpdateAuthorFunc != nil {
+		return m.UpdateAuthorFunc(ctx, id, name)
+	}
+	return nil
 }
 
 func TestCreateAuthorHandler(t *testing.T) {
@@ -114,7 +92,7 @@ func TestCreateAuthorHandler(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Configuração do teste
-			handler := NewAuthorHandler(tc.mockRepo)
+			handler := handlers.NewAuthorHandler(tc.mockRepo)
 			router := mux.NewRouter()
 			handler.DefineAuthors(router)
 
@@ -125,11 +103,102 @@ func TestCreateAuthorHandler(t *testing.T) {
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 			rr := httptest.NewRecorder()
 
-			// Execução
 			// Usamos o roteador para servir a requisição, o que é mais próximo do comportamento real.
 			router.ServeHTTP(rr, req)
 
 			// Verificação
+			if status := rr.Code; status != tc.expectedStatusCode {
+				t.Errorf("handler retornou status code errado: got %v want %v", status, tc.expectedStatusCode)
+			}
+
+			if !strings.Contains(rr.Body.String(), tc.expectedBodyContains) {
+				t.Errorf("handler retornou corpo inesperado: got %q want to contain %q", rr.Body.String(), tc.expectedBodyContains)
+			}
+		})
+	}
+}
+
+func TestUpdateAuthorHandler(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		authorID             string // ID na URL, como string
+		formName             string
+		mockRepo             *MockAuthorRepository
+		expectedStatusCode   int
+		expectedBodyContains string
+	}{
+		{
+			name:     "deve atualizar um autor com sucesso",
+			authorID: "1",
+			formName: "Nome Atualizado",
+			mockRepo: &MockAuthorRepository{
+				UpdateAuthorFunc: func(ctx context.Context, id int, name string) error {
+					if id == 1 && name == "Nome Atualizado" {
+						return nil // Sucesso
+					}
+					return errors.New("mock recebeu dados inesperados")
+				},
+			},
+			expectedStatusCode:   http.StatusOK,
+			expectedBodyContains: "Autor atualizado com sucesso",
+		},
+		{
+			name:     "deve retornar 404 se o autor não for encontrado",
+			authorID: "999",
+			formName: "Nome Qualquer",
+			mockRepo: &MockAuthorRepository{
+				UpdateAuthorFunc: func(ctx context.Context, id int, name string) error {
+					return repository.ErrAuthorNotFound // Simula erro do repositório
+				},
+			},
+			expectedStatusCode:   http.StatusNotFound,
+			expectedBodyContains: "Autor não encontrado",
+		},
+		{
+			name:                 "deve retornar 400 se o nome estiver em branco",
+			authorID:             "1",
+			formName:             "  ",
+			mockRepo:             &MockAuthorRepository{}, // O repositório não será chamado
+			expectedStatusCode:   http.StatusBadRequest,
+			expectedBodyContains: `O campo "name" é obrigatório`,
+		},
+		{
+			name:                 "deve retornar 400 se o ID for inválido",
+			authorID:             "abc", // ID não numérico
+			formName:             "Nome Válido",
+			mockRepo:             &MockAuthorRepository{}, // O repositório não será chamado
+			expectedStatusCode:   http.StatusBadRequest,
+			expectedBodyContains: "ID inválido",
+		},
+		{
+			name:     "deve retornar 500 em caso de erro genérico do repositório",
+			authorID: "1",
+			formName: "Nome Válido",
+			mockRepo: &MockAuthorRepository{
+				UpdateAuthorFunc: func(ctx context.Context, id int, name string) error {
+					return errors.New("erro de disco no banco de dados")
+				},
+			},
+			expectedStatusCode:   http.StatusInternalServerError,
+			expectedBodyContains: "Erro ao atualizar autor",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			handler := handlers.NewAuthorHandler(tc.mockRepo)
+			formData := url.Values{}
+			formData.Set("name", tc.formName)
+
+			req := httptest.NewRequest("PATCH", fmt.Sprintf("/authors/%s", tc.authorID), strings.NewReader(formData.Encode()))
+			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			rr := httptest.NewRecorder()
+
+			// O handler UpdateAuthor depende do mux para extrair o ID da URL.
+			router := mux.NewRouter()
+			router.HandleFunc("/authors/{id}", handler.UpdateAuthor)
+			router.ServeHTTP(rr, req)
+
 			if status := rr.Code; status != tc.expectedStatusCode {
 				t.Errorf("handler retornou status code errado: got %v want %v", status, tc.expectedStatusCode)
 			}

@@ -7,6 +7,7 @@ import (
 	"lucienne/internal/domain"
 	"lucienne/internal/infra/repository"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -37,8 +38,40 @@ func (h *AuthorHandler) NewAuthorForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthorHandler) UpdateAuthor(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID inválido", http.StatusBadRequest)
+		return
+	}
+
+	err = r.ParseForm()
+	if err != nil {
+		http.Error(w, "Erro ao ler formulário", http.StatusBadRequest)
+		return
+	}
+
+	name := r.FormValue("name")
+	if strings.TrimSpace(name) == "" {
+		http.Error(w, `O campo "name" é obrigatório`, http.StatusBadRequest)
+		return
+	}
+
+	err = h.repo.UpdateAuthor(r.Context(), id, name)
+	if errors.Is(err, repository.ErrAuthorNotFound) {
+		http.Error(w, "Autor não encontrado", http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		http.Error(w, "Erro ao atualizar autor", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Rota PATCH /authors/{id} OK\n"))
+	w.Write([]byte("Autor atualizado com sucesso"))
 }
 
 func (h *AuthorHandler) CreateAuthorHandler(w http.ResponseWriter, r *http.Request) {
