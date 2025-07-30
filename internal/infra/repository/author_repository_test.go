@@ -2,22 +2,14 @@ package repository_test
 
 import (
 	"context"
-	"fmt"
-	"log"
-	"lucienne/config"
 	"lucienne/internal/infra/database"
 	"lucienne/internal/infra/repository"
 	"testing"
-	"time"
 
-	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	tclog "github.com/testcontainers/testcontainers-go/log"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -26,78 +18,8 @@ const (
 	selectQuery = "SELECT name FROM authors WHERE id = $1"
 )
 
-type testcontainerNoopLogger struct{}
-
-func (l testcontainerNoopLogger) Printf(_ string, _ ...any) {}
-
-// setupTestDBAndMigrate inicializa a conexão com o banco de dados para os testes, aplica as migrações e retorna uma função de limpeza.
-func setupTestDBAndMigrate(t *testing.T) func() {
-	t.Helper()
-	t.Setenv("APP_ENV", "test")
-
-	tclog.SetDefault(testcontainerNoopLogger{})
-
-	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
-		Image:        "postgres:15",
-		Env:          map[string]string{"POSTGRES_USER": "postgres", "POSTGRES_PASSWORD": "postgres", "POSTGRES_DB": "lucienne_test"},
-		ExposedPorts: []string{"5432/tcp"},
-		WaitingFor:   wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(10 * time.Second),
-	}
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	require.NoError(t, err, "Falha ao iniciar o container do banco de dados")
-
-	// Obtém o host e a porta mapeada dinamicamente do container.
-	endpoint, err := container.Endpoint(ctx, "")
-	require.NoError(t, err, "Falha ao obter o endpoint do container")
-
-	// Constrói a URL de conexão completa usando o endpoint dinâmico.
-	databaseURL := fmt.Sprintf("postgres://postgres:postgres@%s/lucienne_test?sslmode=disable", endpoint)
-
-	// AGORA, com o container rodando e a URL dinâmica em mãos, nós configuramos e conectamos ao banco.
-	config.EnvVariables.DatabaseURL = databaseURL
-	database.ConnectDB()
-
-	// Caminho para as migrações relativo ao arquivo de teste
-	migrationsPath := "file://../../../db/migrations"
-
-	// Usa a URL dinâmica para as migrações.
-	m, err := migrate.New(migrationsPath, databaseURL)
-	require.NoError(t, err, "Falha ao criar instância de migração")
-
-	err = m.Up()
-	if err != nil && err != migrate.ErrNoChange {
-		require.NoError(t, err, "Falha ao aplicar migrações (Up)")
-	}
-
-	// Retorna a função de limpeza (teardown)
-	return func() {
-		err = m.Down()
-		if err != nil && err != migrate.ErrNoChange {
-			log.Printf("AVISO: Falha ao reverter migrações (Down): %v", err)
-		}
-		sourceErr, dbErr := m.Close()
-		require.NoError(t, sourceErr)
-		require.NoError(t, dbErr)
-		database.Conn.Close(context.Background())
-
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	}
-}
-
 func TestPostgresAuthorRepository_UpdateAuthor(t *testing.T) {
-	// Só executa este teste se a flag -short não for usada
-	if testing.Short() {
-		t.Skip("Pulando teste de integração com banco de dados em modo 'short'.")
-	}
-
-	cleanup := setupTestDBAndMigrate(t)
-	defer cleanup()
+	setupTestDBAndMigrate(t)
 	ctx := context.Background()
 	repo := repository.NewPostgresAuthorRepository()
 
@@ -110,12 +32,12 @@ func TestPostgresAuthorRepository_UpdateAuthor(t *testing.T) {
 		require.NoError(t, err, "Falha ao inserir autor para o teste de atualização")
 
 		// Garante que o autor de teste seja removido no final
-		defer func() {
+		t.Cleanup(func() {
 			_, err := database.Conn.Exec(ctx, deleteQuery, authorID)
 			if err != nil {
-				log.Printf("AVISO: Falha ao limpar autor de teste com ID %d: %v", authorID, err)
+				t.Logf("AVISO: Falha ao limpar autor de teste com ID %d: %v", authorID, err)
 			}
-		}()
+		})
 
 		// 2. Chamar o método a ser testado
 		newName := "Autor Atualizado"
@@ -137,5 +59,45 @@ func TestPostgresAuthorRepository_UpdateAuthor(t *testing.T) {
 
 		// Verifica se o erro retornado é o esperado
 		assert.ErrorIs(t, err, repository.ErrAuthorNotFound)
+	})
+
+	// -- Caso de Falha: Nome duplicado --
+	t.Run("deve retornar ErrAuthorAlreadyExists ao atualizar para um nome duplicado", func(t *testing.T) {
+		// 1. Inserir dois autores distintos
+		var author1ID, author2ID int
+		author1Name := "Autor Existente"
+		author2Name := "Autor a ser Atualizado"
+
+		err := database.Conn.QueryRow(ctx, insertQuery, author1Name).Scan(&author1ID)
+		require.NoError(t, err)
+		err = database.Conn.QueryRow(ctx, insertQuery, author2Name).Scan(&author2ID)
+		require.NoError(t, err)
+
+		t.Cleanup(func() {
+			database.Conn.Exec(ctx, deleteQuery, author1ID)
+			database.Conn.Exec(ctx, deleteQuery, author2ID)
+		})
+
+		// 2. Tentar atualizar o autor 2 com o nome do autor 1
+		err = repo.UpdateAuthor(ctx, author2ID, author1Name)
+
+		// 3. Verificar se o erro é de autor já existente
+		assert.ErrorIs(t, err, repository.ErrAuthorAlreadyExists)
+	})
+
+	// -- Caso de Falha: Nome vazio --
+	t.Run("deve retornar erro ao tentar atualizar para um nome vazio", func(t *testing.T) {
+		// 1. Inserir um autor para o teste
+		var authorID int
+		err := database.Conn.QueryRow(ctx, insertQuery, "Autor Para Teste de Nome Vazio").Scan(&authorID)
+		require.NoError(t, err)
+
+		t.Cleanup(func() {
+			database.Conn.Exec(ctx, deleteQuery, authorID)
+		})
+
+		// 2. Tentar atualizar com um nome contendo apenas espaços
+		err = repo.UpdateAuthor(ctx, authorID, "   ")
+		assert.ErrorIs(t, err, repository.ErrAuthorNameCannotBeEmpty)
 	})
 }

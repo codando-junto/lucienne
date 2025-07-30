@@ -103,9 +103,6 @@ func TestCreateAuthorHandler(t *testing.T) {
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 			rr := httptest.NewRecorder()
 
-			// Execução
-			// Usamos o roteador para servir a requisição, o que é mais próximo do comportamento real.
-			router.ServeHTTP(rr, req)
 			// Usamos o roteador para servir a requisição, o que é mais próximo do comportamento real.
 			router.ServeHTTP(rr, req)
 
@@ -192,12 +189,12 @@ func TestUpdateAuthorHandler(t *testing.T) {
 			handler := handlers.NewAuthorHandler(tc.mockRepo)
 			formData := url.Values{}
 			formData.Set("name", tc.formName)
+
 			req := httptest.NewRequest("PATCH", fmt.Sprintf("/authors/%s", tc.authorID), strings.NewReader(formData.Encode()))
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 			rr := httptest.NewRecorder()
 
 			// O handler UpdateAuthor depende do mux para extrair o ID da URL.
-			// Portanto, precisamos criar um roteador para o teste.
 			router := mux.NewRouter()
 			router.HandleFunc("/authors/{id}", handler.UpdateAuthor)
 			router.ServeHTTP(rr, req)
