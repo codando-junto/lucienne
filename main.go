@@ -5,7 +5,6 @@ import (
 	"lucienne/config"
 	"lucienne/internal/handlers"
 	"lucienne/internal/infra/database"
-
 	"lucienne/internal/infra/repository"
 	"lucienne/pkg/renderer"
 	"net/http"
