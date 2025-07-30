@@ -6,7 +6,9 @@ import (
 	"lucienne/internal/handlers"
 	"lucienne/internal/infra/database"
 	"lucienne/internal/infra/repository"
+	"lucienne/pkg/renderer"
 	"net/http"
+	"path"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -26,7 +28,6 @@ const (
 
 func main() {
 	r := mux.NewRouter()
-
 	r.PathPrefix(AssetsServerPath).Handler(http.StripPrefix(AssetsServerPath, http.FileServer(http.Dir(CompiledAssetsPath))))
 
 	// Injeção de Dependência
@@ -47,6 +48,7 @@ func init() {
 	config.EnvVariables.Load()
 	config.Application.Configure(config.EnvVariables.AppEnv)
 	config.Assets.Configure(AssetsPath, CompiledAssetsPath, AssetsBuildFilePath)
+	renderer.HTML.Configure(AssetsServerPath, path.Join(config.Application.RootPath, ViewsPath), config.Assets.AssetsMapping)
 	database.ConnectDB()
 
 	m, err := migrate.New(
