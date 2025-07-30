@@ -9,16 +9,6 @@ services:
     restart: always
     ports:
       - "5432:5432"
-  postgres_test:
-    image: postgres:15
-    container_name: postgres_test_container
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: lucienne_test
-    restart: always
-    ports:
-      - "5433:5432"
   app:
     image: gomex/luciene:latest
     platform: linux/amd64
