@@ -5,6 +5,7 @@ import (
 	"errors"
 	"lucienne/internal/domain"
 	"lucienne/internal/infra/database"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -14,6 +15,9 @@ var ErrAuthorAlreadyExists = errors.New("author already exists")
 
 // ErrAuthorNotFound é retornado quando um autor não é encontrado para uma operação.
 var ErrAuthorNotFound = errors.New("autor não encontrado")
+
+// ErrAuthorNameCannotBeEmpty é retornado quando uma tentativa de criar ou atualizar um autor com nome vazio é feita.
+var ErrAuthorNameCannotBeEmpty = errors.New("o nome do autor não pode ser vazio")
 
 const (
 	// Não precisamos retornar o ID por enquanto, então usamos um INSERT simples.
@@ -55,13 +59,26 @@ func (r *PostgresAuthorRepository) CreateAuthor(ctx context.Context, author *dom
 
 // UpdateAuthor atualiza o nome de um autor existente no banco de dados.
 func (r *PostgresAuthorRepository) UpdateAuthor(ctx context.Context, id int, name string) error {
+	// 1. Adiciona validação para impedir nomes vazios.
+	if strings.TrimSpace(name) == "" {
+		return ErrAuthorNameCannotBeEmpty
+	}
+
 	res, err := database.Conn.Exec(ctx, updateAuthorQuery, name, id)
 	if err != nil {
+		// 2. Adiciona tratamento para erro de nome duplicado, assim como no CreateAuthor.
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return ErrAuthorAlreadyExists
+		}
 		return err
 	}
+
+	// 3. Verifica se alguma linha foi de fato alterada.
 	rows := res.RowsAffected()
 	if rows == 0 {
 		return ErrAuthorNotFound
 	}
+
 	return nil
 }
