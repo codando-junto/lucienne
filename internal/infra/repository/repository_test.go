@@ -23,14 +23,17 @@ func (l testcontainerNoopLogger) Printf(_ string, _ ...any) {}
 // setupTestDBAndMigrate inicializa a conexão com o banco de dados para os testes, aplica as migrações e retorna uma função de limpeza.
 func setupTestDBAndMigrate(t testing.TB) {
 	t.Helper()
-	t.Setenv("APP_ENV", "test")
 
 	tclog.SetDefault(testcontainerNoopLogger{})
 
 	ctx := t.Context()
 	req := testcontainers.ContainerRequest{
-		Image:        "postgres:15",
-		Env:          map[string]string{"POSTGRES_USER": "postgres", "POSTGRES_PASSWORD": "postgres", "POSTGRES_DB": "lucienne_test"},
+		Image: "postgres:15",
+		Env: map[string]string{
+			"POSTGRES_USER":     "postgres",
+			"POSTGRES_PASSWORD": "postgres",
+			"POSTGRES_DB":       "lucienne_test",
+		},
 		ExposedPorts: []string{"5432/tcp"},
 		WaitingFor: wait.ForSQL("5432/tcp", "pgx/v5", func(host string, port nat.Port) string {
 			return fmt.Sprintf("postgres://postgres:postgres@%s:%s/lucienne_test?sslmode=disable", host, port.Port())
