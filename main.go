@@ -28,25 +28,17 @@ const (
 
 func main() {
 	r := mux.NewRouter()
-
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		page, err := renderer.HTML.Render("home.html", nil)
-		if err != nil {
-			w.WriteHeader(500)
-			w.Write([]byte("Ocorreu um erro ao renderizar a página"))
-			return
-		}
-		w.Write(page)
-	}).Methods("GET")
-	r.HandleFunc("/health", handlers.HealthHandler).Methods("GET")
 	r.PathPrefix(AssetsServerPath).Handler(http.StripPrefix(AssetsServerPath, http.FileServer(http.Dir(CompiledAssetsPath))))
 
 	// Injeção de Dependência
 	authorRepo := repository.NewPostgresAuthorRepository()
 	authorHandler := handlers.NewAuthorHandler(authorRepo)
+	publisherRepo := repository.NewPostgresPublisherRepository()
+	publisherHandler := handlers.NewPublisherHandler(publisherRepo)
 
 	handlers.ReturnHealth(r)
 	authorHandler.DefineAuthors(r)
+	publisherHandler.DefinePublishers(r)
 
 	log.Println("Rodando na porta: " + config.EnvVariables.AppPort)
 	log.Fatal(http.ListenAndServe(":"+config.EnvVariables.AppPort, r))
