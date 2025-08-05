@@ -1,4 +1,4 @@
-INSERT INTO editoras (nome)
+INSERT INTO publishers (name)
 VALUES
 ('Passa Palavra'),
 ('Companhia das Letras'),
