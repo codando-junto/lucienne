@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"lucienne/config"
 	"lucienne/internal/handlers"
@@ -11,7 +12,7 @@ import (
 	"path"
 
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/gorilla/mux"
 )
@@ -28,6 +29,16 @@ const (
 
 func main() {
 	r := mux.NewRouter()
+
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		page, err := renderer.HTML.Render("home.html", nil)
+		if err != nil {
+			w.WriteHeader(500)
+			w.Write([]byte("Ocorreu um erro ao renderizar a página"))
+			return
+		}
+		w.Write(page)
+	}).Methods("GET")
 	r.PathPrefix(AssetsServerPath).Handler(http.StripPrefix(AssetsServerPath, http.FileServer(http.Dir(CompiledAssetsPath))))
 
 	// Injeção de Dependência
@@ -88,9 +99,25 @@ func init() {
 
 	if config.Application.IsDevelopment() {
 		log.Println("Ambiente de desenvolvimento detectado. Aplicando seed...")
-		seed, err := migrate.New(
+
+		db, err := sql.Open("postgres", config.EnvVariables.DatabaseURL)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer db.Close()
+
+		driver, err := postgres.WithInstance(db, &postgres.Config{
+			MigrationsTable: "schema_seeders",
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		seed, err := migrate.NewWithDatabaseInstance(
 			SeedsPath,
-			config.EnvVariables.DatabaseURL)
+			"postgres",
+			driver,
+		)
 		if err != nil {
 			log.Fatal(err)
 		}
