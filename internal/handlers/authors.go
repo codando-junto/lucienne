@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"html/template"
 	"log"
 	"lucienne/internal/domain"
 	"lucienne/internal/infra/repository"
@@ -25,10 +26,46 @@ func NewAuthorHandler(repo repository.AuthorRepository) *AuthorHandler {
 
 // DefineAuthors registra as rotas de autor no roteador.
 func (h *AuthorHandler) DefineAuthors(router *mux.Router) {
-	authorsRouter := router.PathPrefix("/authors").Subrouter()
-	authorsRouter.HandleFunc("/new", h.NewAuthorForm).Methods("GET")
-	authorsRouter.HandleFunc("/{id}", h.UpdateAuthor).Methods("PATCH")
-	authorsRouter.HandleFunc("", h.CreateAuthorHandler).Methods("POST")
+	router.HandleFunc("/authors/new", h.NewAuthorForm).Methods("GET")
+	router.HandleFunc("/authors/{id}/edit", h.EditAuthor).Methods("GET")
+	router.HandleFunc("/authors/{id}", h.UpdateAuthor).Methods("PATCH", "POST")
+	router.HandleFunc("/authors", h.CreateAuthorHandler).Methods("POST")
+}
+
+// EditAuthor exibe o formulário de edição de autor com dados preenchidos.
+func (h *AuthorHandler) EditAuthor(w http.ResponseWriter, r *http.Request) {
+	log.Println("EditAuthor handler chamado para:", r.URL.Path)
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "ID inválido", http.StatusBadRequest)
+		return
+	}
+
+	author, err := h.repo.GetAuthorByID(r.Context(), id)
+	if errors.Is(err, repository.ErrAuthorNotFound) {
+		http.Error(w, "Autor não encontrado", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		http.Error(w, "Erro ao buscar autor", http.StatusInternalServerError)
+		return
+	}
+
+	// Renderizar template edit.html
+	// Usando html/template padrão
+	tmpl, err := template.ParseFiles("internal/views/edit.html")
+	if err != nil {
+		http.Error(w, "Erro ao carregar template", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	err = tmpl.Execute(w, author)
+	if err != nil {
+		http.Error(w, "Erro ao renderizar template", http.StatusInternalServerError)
+		return
+	}
 }
 
 // NewAuthorForm exibe o formulário para criar um novo autor.

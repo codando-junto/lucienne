@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 
@@ -18,8 +19,9 @@ import (
 
 // MockAuthorRepository é uma implementação falsa do repositório para testes unitários dos handlers.
 type MockAuthorRepository struct {
-	CreateAuthorFunc func(ctx context.Context, author *domain.Author) error
-	UpdateAuthorFunc func(ctx context.Context, id int, name string) error
+	CreateAuthorFunc  func(ctx context.Context, author *domain.Author) error
+	UpdateAuthorFunc  func(ctx context.Context, id int, name string) error
+	GetAuthorByIDFunc func(ctx context.Context, id int64) (*domain.Author, error)
 }
 
 // CreateAuthor implementa a interface repository.AuthorRepository.
@@ -36,6 +38,14 @@ func (m *MockAuthorRepository) UpdateAuthor(ctx context.Context, id int, name st
 		return m.UpdateAuthorFunc(ctx, id, name)
 	}
 	return nil
+}
+
+// GetAuthorByID implementa a interface repository.AuthorRepository.
+func (m *MockAuthorRepository) GetAuthorByID(ctx context.Context, id int64) (*domain.Author, error) {
+	if m.GetAuthorByIDFunc != nil {
+		return m.GetAuthorByIDFunc(ctx, id)
+	}
+	return nil, errors.New("não implementado no mock")
 }
 
 func TestCreateAuthorHandler(t *testing.T) {
@@ -208,4 +218,71 @@ func TestUpdateAuthorHandler(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestEditAuthorHandler(t *testing.T) {
+	os.MkdirAll("internal/views", 0755)
+	os.WriteFile("internal/views/edit.html", []byte("<h1>Editar Autor</h1>{{.Name}}"), 0644)
+	defer os.Remove("internal/views/edit.html")
+	t.Run("deve exibir o formulário de edição com dados do autor", func(t *testing.T) {
+		mockRepo := &MockAuthorRepository{
+			GetAuthorByIDFunc: func(ctx context.Context, id int64) (*domain.Author, error) {
+				return &domain.Author{ID: id, Name: "Autor Teste"}, nil
+			},
+		}
+		handler := handlers.NewAuthorHandler(mockRepo)
+		router := mux.NewRouter()
+		handler.DefineAuthors(router)
+
+		req := httptest.NewRequest("GET", "/authors/1/edit", nil)
+		rr := httptest.NewRecorder()
+		router.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("esperava status 200, obteve %d", status)
+		}
+		if !strings.Contains(rr.Body.String(), "Editar Autor") || !strings.Contains(rr.Body.String(), "Autor Teste") {
+			t.Errorf("esperava corpo com nome do autor, obteve: %q", rr.Body.String())
+		}
+	})
+
+	t.Run("deve retornar 404 se o autor não for encontrado", func(t *testing.T) {
+		mockRepo := &MockAuthorRepository{
+			GetAuthorByIDFunc: func(ctx context.Context, id int64) (*domain.Author, error) {
+				return nil, repository.ErrAuthorNotFound
+			},
+		}
+		handler := handlers.NewAuthorHandler(mockRepo)
+		router := mux.NewRouter()
+		handler.DefineAuthors(router)
+
+		req := httptest.NewRequest("GET", "/authors/999/edit", nil)
+		rr := httptest.NewRecorder()
+		router.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusNotFound {
+			t.Errorf("esperava status 404, obteve %d", status)
+		}
+		if !strings.Contains(rr.Body.String(), "Autor não encontrado") {
+			t.Errorf("esperava mensagem de autor não encontrado, obteve: %q", rr.Body.String())
+		}
+	})
+
+	t.Run("deve retornar 400 se o ID for inválido", func(t *testing.T) {
+		mockRepo := &MockAuthorRepository{}
+		handler := handlers.NewAuthorHandler(mockRepo)
+		router := mux.NewRouter()
+		handler.DefineAuthors(router)
+
+		req := httptest.NewRequest("GET", "/authors/abc/edit", nil)
+		rr := httptest.NewRecorder()
+		router.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusBadRequest {
+			t.Errorf("esperava status 400, obteve %d", status)
+		}
+		if !strings.Contains(rr.Body.String(), "ID inválido") {
+			t.Errorf("esperava mensagem de ID inválido, obteve: %q", rr.Body.String())
+		}
+	})
 }
