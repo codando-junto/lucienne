@@ -31,6 +31,7 @@ const (
 type AuthorRepository interface {
 	CreateAuthor(ctx context.Context, author *domain.Author) error
 	UpdateAuthor(ctx context.Context, id int, name string) error
+	GetAuthorByID(ctx context.Context, id int64) (*domain.Author, error)
 }
 
 // PostgresAuthorRepository é a implementação do AuthorRepository para o PostgreSQL.
@@ -38,10 +39,26 @@ type PostgresAuthorRepository struct {
 	// No futuro, podemos adicionar o pool de conexões aqui.
 }
 
+	const getAuthorByIDQuery = `SELECT id, name FROM authors WHERE id = $1`
+
 // NewPostgresAuthorRepository cria uma nova instância do repositório.
 func NewPostgresAuthorRepository() *PostgresAuthorRepository {
 	return &PostgresAuthorRepository{}
 }
+
+	// GetAuthorByID busca um autor pelo ID.
+	func (r *PostgresAuthorRepository) GetAuthorByID(ctx context.Context, id int64) (*domain.Author, error) {
+		row := database.Conn.QueryRow(ctx, getAuthorByIDQuery, id)
+		var author domain.Author
+		err := row.Scan(&author.ID, &author.Name)
+		if err != nil {
+			if strings.Contains(err.Error(), "no rows") {
+				return nil, ErrAuthorNotFound
+			}
+			return nil, err
+		}
+		return &author, nil
+	}
 
 // CreateAuthor insere um novo autor no banco de dados.
 func (r *PostgresAuthorRepository) CreateAuthor(ctx context.Context, author *domain.Author) error {
