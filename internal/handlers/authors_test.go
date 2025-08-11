@@ -7,6 +7,7 @@ import (
 	"lucienne/internal/domain"
 	"lucienne/internal/handlers"
 	"lucienne/internal/infra/repository" // Importado para usar o erro customizado
+	"lucienne/pkg/renderer"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -200,7 +201,7 @@ func TestUpdateAuthorHandler(t *testing.T) {
 			formData := url.Values{}
 			formData.Set("name", tc.formName)
 
-			req := httptest.NewRequest("PATCH", fmt.Sprintf("/authors/%s", tc.authorID), strings.NewReader(formData.Encode()))
+			req := httptest.NewRequest("PUT", fmt.Sprintf("/authors/%s", tc.authorID), strings.NewReader(formData.Encode()))
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 			rr := httptest.NewRecorder()
 
@@ -221,9 +222,18 @@ func TestUpdateAuthorHandler(t *testing.T) {
 }
 
 func TestEditAuthorHandler(t *testing.T) {
-	os.MkdirAll("internal/views", 0755)
-	os.WriteFile("internal/views/edit.html", []byte("<h1>Editar Autor</h1>{{.Name}}"), 0644)
-	defer os.Remove("internal/views/edit.html")
+	renderer.HTML.Configure("", "internal/views", nil)
+
+	//os.MkdirAll("internal/views", 0755)
+	//os.WriteFile("internal/views/edit.html", []byte(`<h2>Editar Autor</h2><form><input type="text" name="name" value="{{ .Name }}"></form>`), 0644)
+	//defer os.Remove("internal/views/edit.html")
+
+	templateDir := "internal/views/authors"
+	templatePath := templateDir + "/edit.html"
+	os.MkdirAll(templateDir, 0755)
+	os.WriteFile(templatePath, []byte(`<h2>Editar Autor</h2><form><input type="text" name="name" value="{{ .Name }}"></form>`), 0644)
+	defer os.RemoveAll("internal/views/authors")
+
 	t.Run("deve exibir o formulário de edição com dados do autor", func(t *testing.T) {
 		mockRepo := &MockAuthorRepository{
 			GetAuthorByIDFunc: func(ctx context.Context, id int64) (*domain.Author, error) {
@@ -241,8 +251,14 @@ func TestEditAuthorHandler(t *testing.T) {
 		if status := rr.Code; status != http.StatusOK {
 			t.Errorf("esperava status 200, obteve %d", status)
 		}
-		if !strings.Contains(rr.Body.String(), "Editar Autor") || !strings.Contains(rr.Body.String(), "Autor Teste") {
-			t.Errorf("esperava corpo com nome do autor, obteve: %q", rr.Body.String())
+		// Verifica se o título está correto
+		if !strings.Contains(rr.Body.String(), "<h2>Editar Autor</h2>") {
+			t.Errorf("esperava o título '<h2>Editar Autor</h2>', mas não o encontrou no corpo: %q", rr.Body.String())
+		}
+		// Verifica especificamente se o campo de input está preenchido com o valor correto
+		expectedInputHTML := `value="Autor Teste"`
+		if !strings.Contains(rr.Body.String(), expectedInputHTML) {
+			t.Errorf("esperava que o campo de input contivesse '%s', mas não encontrou no corpo: %q", expectedInputHTML, rr.Body.String())
 		}
 	})
 
@@ -283,6 +299,29 @@ func TestEditAuthorHandler(t *testing.T) {
 		}
 		if !strings.Contains(rr.Body.String(), "ID inválido") {
 			t.Errorf("esperava mensagem de ID inválido, obteve: %q", rr.Body.String())
+		}
+	})
+
+	t.Run("deve retornar 500 se o repositório falhar ao buscar autor", func(t *testing.T) {
+		mockRepo := &MockAuthorRepository{
+			GetAuthorByIDFunc: func(ctx context.Context, id int64) (*domain.Author, error) {
+				// Simula um erro genérico do banco de dados
+				return nil, errors.New("falha de conexão com o banco")
+			},
+		}
+		handler := handlers.NewAuthorHandler(mockRepo)
+		router := mux.NewRouter()
+		handler.DefineAuthors(router)
+
+		req := httptest.NewRequest("GET", "/authors/1/edit", nil)
+		rr := httptest.NewRecorder()
+		router.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusInternalServerError {
+			t.Errorf("esperava status 500, obteve %d", status)
+		}
+		if !strings.Contains(rr.Body.String(), "Erro ao buscar autor") {
+			t.Errorf("esperava mensagem de erro ao buscar autor, obteve: %q", rr.Body.String())
 		}
 	})
 }
