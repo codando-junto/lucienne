@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -9,8 +8,8 @@
 <body>
     <h2>Editar Autor</h2>
     <form action="/authors/{{ .ID }}" method="POST">
-        <label for="name">Novo nome:</label>
-        <input type="text" id="name" name="name" placeholder="Novo nome do autor">
+        <label for="name">Nome:</label>
+        <input type="text" id="name" name="name" value="{{ .Name }}">
         <button type="submit">Atualizar</button>
     </form>
 </body>
