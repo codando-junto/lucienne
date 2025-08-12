@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"strings"
 	"testing"
 
@@ -222,17 +221,8 @@ func TestUpdateAuthorHandler(t *testing.T) {
 }
 
 func TestEditAuthorHandler(t *testing.T) {
-	renderer.HTML.Configure("", "internal/views", nil)
-
-	//os.MkdirAll("internal/views", 0755)
-	//os.WriteFile("internal/views/edit.html", []byte(`<h2>Editar Autor</h2><form><input type="text" name="name" value="{{ .Name }}"></form>`), 0644)
-	//defer os.Remove("internal/views/edit.html")
-
-	templateDir := "internal/views/authors"
-	templatePath := templateDir + "/edit.html"
-	os.MkdirAll(templateDir, 0755)
-	os.WriteFile(templatePath, []byte(`<h2>Editar Autor</h2><form><input type="text" name="name" value="{{ .Name }}"></form>`), 0644)
-	defer os.RemoveAll("internal/views/authors")
+	viewsDir := "../views"
+	renderer.HTML.Configure("", viewsDir, nil)
 
 	t.Run("deve exibir o formulário de edição com dados do autor", func(t *testing.T) {
 		mockRepo := &MockAuthorRepository{
