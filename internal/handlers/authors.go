@@ -34,7 +34,6 @@ func (h *AuthorHandler) DefineAuthors(router *mux.Router) {
 
 // EditAuthor exibe o formulário de edição de autor com dados preenchidos.
 func (h *AuthorHandler) EditAuthor(w http.ResponseWriter, r *http.Request) {
-	//log.Println("EditAuthor handler chamado para:", r.URL.Path)
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 	id, err := strconv.Atoi(idStr)
@@ -58,6 +57,7 @@ func (h *AuthorHandler) EditAuthor(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Erro ao renderizar template", http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusOK)
 	w.Write(page)
 }
 
