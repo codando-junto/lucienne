@@ -1,11 +1,10 @@
-package handlers_test
+package handlers
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"lucienne/internal/domain"
-	"lucienne/internal/handlers"
 	"lucienne/internal/infra/repository" // Importado para usar o erro customizado
 	"net/http"
 	"net/http/httptest"
@@ -36,6 +35,32 @@ func (m *MockAuthorRepository) UpdateAuthor(ctx context.Context, id int, name st
 		return m.UpdateAuthorFunc(ctx, id, name)
 	}
 	return nil
+}
+
+func TestNewAuthorForm(t *testing.T) {
+	t.Run("deve exibir o formulário de novo autor com sucesso", func(t *testing.T) {
+		// Como este handler não usa o repositório, podemos passar nil.
+		handler := NewAuthorHandler(nil)
+		router := mux.NewRouter()
+		handler.DefineAuthors(router)
+
+		req := httptest.NewRequest("GET", "/authors/new", nil)
+		rr := httptest.NewRecorder()
+
+		router.ServeHTTP(rr, req)
+
+		// Verificação do Status Code
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("handler retornou status code errado: got %v want %v",
+				status, http.StatusOK)
+		}
+
+		// Verificação do Conteúdo do Corpo
+		expectedBody := "<h3>Novo Autor</h3>"
+		if !strings.Contains(rr.Body.String(), expectedBody) {
+			t.Errorf("handler retornou corpo inesperado: got %q want to contain %q", rr.Body.String(), expectedBody)
+		}
+	})
 }
 
 func TestCreateAuthorHandler(t *testing.T) {
@@ -92,7 +117,7 @@ func TestCreateAuthorHandler(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Configuração do teste
-			handler := handlers.NewAuthorHandler(tc.mockRepo)
+			handler := NewAuthorHandler(tc.mockRepo)
 			router := mux.NewRouter()
 			handler.DefineAuthors(router)
 
@@ -186,7 +211,7 @@ func TestUpdateAuthorHandler(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			handler := handlers.NewAuthorHandler(tc.mockRepo)
+			handler := NewAuthorHandler(tc.mockRepo)
 			formData := url.Values{}
 			formData.Set("name", tc.formName)
 
