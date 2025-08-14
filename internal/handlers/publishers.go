@@ -52,7 +52,7 @@ func (h *PublisherHandler) CreatePublisherHandler(w http.ResponseWriter, r *http
 		// Se o repositório retornar o erro de que o publisher já existe
 		//  retorna 409 Conflict.
 		if errors.Is(err, repository.ErrPublisherAlreadyExists) {
-			errorMessage := fmt.Sprintf("Erro: A editora '%s' já está cadastrada.", name)
+			errorMessage := fmt.Sprintf(`Erro: A editora %q já está cadastrada.`, name)
 			http.Error(w, errorMessage, http.StatusConflict)
 			return
 		}
