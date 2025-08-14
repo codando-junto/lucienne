@@ -7,6 +7,7 @@ import (
 	"lucienne/internal/infra/database"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -23,14 +24,16 @@ var (
 
 const (
 	// Não precisamos retornar o ID por enquanto, então usamos um INSERT simples.
-	createAuthorQuery = `INSERT INTO authors (name) VALUES ($1)`
-	updateAuthorQuery = `UPDATE authors SET name = $1 WHERE id = $2`
+	createAuthorQuery  = `INSERT INTO authors (name) VALUES ($1)`
+	updateAuthorQuery  = `UPDATE authors SET name = $1 WHERE id = $2`
+	getAuthorByIDQuery = `SELECT id, name FROM authors WHERE id = $1`
 )
 
 // AuthorRepository define a interface para as operações de autor no banco de dados.
 type AuthorRepository interface {
 	CreateAuthor(ctx context.Context, author *domain.Author) error
 	UpdateAuthor(ctx context.Context, id int, name string) error
+	GetAuthorByID(ctx context.Context, id int64) (*domain.Author, error)
 }
 
 // PostgresAuthorRepository é a implementação do AuthorRepository para o PostgreSQL.
@@ -41,6 +44,20 @@ type PostgresAuthorRepository struct {
 // NewPostgresAuthorRepository cria uma nova instância do repositório.
 func NewPostgresAuthorRepository() *PostgresAuthorRepository {
 	return &PostgresAuthorRepository{}
+}
+
+// GetAuthorByID busca um autor pelo ID.
+func (r *PostgresAuthorRepository) GetAuthorByID(ctx context.Context, id int64) (*domain.Author, error) {
+	row := database.Conn.QueryRow(ctx, getAuthorByIDQuery, id)
+	var author domain.Author
+	err := row.Scan(&author.ID, &author.Name)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrAuthorNotFound
+		}
+		return nil, err
+	}
+	return &author, nil
 }
 
 // CreateAuthor insere um novo autor no banco de dados.
