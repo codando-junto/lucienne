@@ -53,7 +53,7 @@ func TestCreatePublisherHandler(t *testing.T) {
 				},
 			},
 			expectedStatusCode:   http.StatusConflict,
-			expectedBodyContains: "Erro: A editora 'Editora Existente' já está cadastrada.",
+			expectedBodyContains: `Erro: A editora "Editora Existente" já está cadastrada.`,
 		},
 		{
 			name:                 "deve retornar erro 400 se o nome estiver em branco",

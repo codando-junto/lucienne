@@ -63,8 +63,15 @@ func (h *AuthorHandler) EditAuthor(w http.ResponseWriter, r *http.Request) {
 
 // NewAuthorForm exibe o formulário para criar um novo autor.
 func (h *AuthorHandler) NewAuthorForm(w http.ResponseWriter, r *http.Request) {
+	page, err := renderer.HTML.Render("authors/new.html", nil)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Ocorreu um erro ao renderizar a página"))
+		return
+	}
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Rota GET /authors/new OK - o formulário de criação de autor será exibido aqui.\n"))
+	w.Write(page)
+
 }
 
 func (h *AuthorHandler) UpdateAuthor(w http.ResponseWriter, r *http.Request) {

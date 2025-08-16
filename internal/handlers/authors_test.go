@@ -1,13 +1,11 @@
-package handlers_test
+package handlers
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"lucienne/internal/domain"
-	"lucienne/internal/handlers"
 	"lucienne/internal/infra/repository" // Importado para usar o erro customizado
-	"lucienne/pkg/renderer"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -46,6 +44,32 @@ func (m *MockAuthorRepository) GetAuthorByID(ctx context.Context, id int64) (*do
 		return m.GetAuthorByIDFunc(ctx, id)
 	}
 	return nil, errors.New("não implementado no mock")
+}
+
+func TestNewAuthorForm(t *testing.T) {
+	t.Run("deve exibir o formulário de novo autor com sucesso", func(t *testing.T) {
+		// Como este handler não usa o repositório, podemos passar nil.
+		handler := NewAuthorHandler(nil)
+		router := mux.NewRouter()
+		handler.DefineAuthors(router)
+
+		req := httptest.NewRequest("GET", "/authors/new", nil)
+		rr := httptest.NewRecorder()
+
+		router.ServeHTTP(rr, req)
+
+		// Verificação do Status Code
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("handler retornou status code errado: got %v want %v",
+				status, http.StatusOK)
+		}
+
+		// Verificação do Conteúdo do Corpo
+		expectedBody := "<h3>Novo Autor</h3>"
+		if !strings.Contains(rr.Body.String(), expectedBody) {
+			t.Errorf("handler retornou corpo inesperado: got %q want to contain %q", rr.Body.String(), expectedBody)
+		}
+	})
 }
 
 func TestCreateAuthorHandler(t *testing.T) {
@@ -102,7 +126,7 @@ func TestCreateAuthorHandler(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Configuração do teste
-			handler := handlers.NewAuthorHandler(tc.mockRepo)
+			handler := NewAuthorHandler(tc.mockRepo)
 			router := mux.NewRouter()
 			handler.DefineAuthors(router)
 
@@ -196,7 +220,7 @@ func TestUpdateAuthorHandler(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			handler := handlers.NewAuthorHandler(tc.mockRepo)
+			handler := NewAuthorHandler(tc.mockRepo)
 			formData := url.Values{}
 			formData.Set("name", tc.formName)
 
@@ -221,16 +245,13 @@ func TestUpdateAuthorHandler(t *testing.T) {
 }
 
 func TestEditAuthorHandler(t *testing.T) {
-	viewsDir := "../views"
-	renderer.HTML.Configure("", viewsDir, nil)
-
 	t.Run("deve exibir o formulário de edição com dados do autor", func(t *testing.T) {
 		mockRepo := &MockAuthorRepository{
 			GetAuthorByIDFunc: func(ctx context.Context, id int64) (*domain.Author, error) {
 				return &domain.Author{ID: id, Name: "Autor Teste"}, nil
 			},
 		}
-		handler := handlers.NewAuthorHandler(mockRepo)
+		handler := NewAuthorHandler(mockRepo)
 		router := mux.NewRouter()
 		handler.DefineAuthors(router)
 
@@ -258,7 +279,7 @@ func TestEditAuthorHandler(t *testing.T) {
 				return nil, repository.ErrAuthorNotFound
 			},
 		}
-		handler := handlers.NewAuthorHandler(mockRepo)
+		handler := NewAuthorHandler(mockRepo)
 		router := mux.NewRouter()
 		handler.DefineAuthors(router)
 
@@ -276,7 +297,7 @@ func TestEditAuthorHandler(t *testing.T) {
 
 	t.Run("deve retornar 400 se o ID for inválido", func(t *testing.T) {
 		mockRepo := &MockAuthorRepository{}
-		handler := handlers.NewAuthorHandler(mockRepo)
+		handler := NewAuthorHandler(mockRepo)
 		router := mux.NewRouter()
 		handler.DefineAuthors(router)
 
@@ -299,7 +320,7 @@ func TestEditAuthorHandler(t *testing.T) {
 				return nil, errors.New("falha de conexão com o banco")
 			},
 		}
-		handler := handlers.NewAuthorHandler(mockRepo)
+		handler := NewAuthorHandler(mockRepo)
 		router := mux.NewRouter()
 		handler.DefineAuthors(router)
 
