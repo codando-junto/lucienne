@@ -30,6 +30,7 @@ func (h *AuthorHandler) DefineAuthors(router *mux.Router) {
 	router.HandleFunc("/authors/{id}/edit", h.EditAuthor).Methods("GET")
 	router.HandleFunc("/authors/{id}", h.UpdateAuthor).Methods("PUT", "POST")
 	router.HandleFunc("/authors", h.CreateAuthorHandler).Methods("POST")
+	router.HandleFunc("/authors/{id}", h.RemoveAuthor).Methods("DELETE")
 }
 
 // EditAuthor exibe o formulário de edição de autor com dados preenchidos.
@@ -146,4 +147,33 @@ func (h *AuthorHandler) CreateAuthorHandler(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusCreated)
 	responseMessage := fmt.Sprintf("Autor criado com sucesso: %s", name)
 	w.Write([]byte(responseMessage))
+}
+
+func (h *AuthorHandler) RemoveAuthor(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "ID inválido", http.StatusBadRequest)
+		return
+	}
+
+	err = h.repo.RemoveAuthor(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, repository.ErrAuthorHasBooks) {
+			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+			return
+		}
+		if errors.Is(err, repository.ErrAuthorNotFound) {
+			http.Error(w, "Autor não encontrado", http.StatusNotFound)
+			return
+		}
+
+		log.Printf("Erro inesperado ao remover autor: %v", err)
+		http.Error(w, "Erro interno ao remover autor", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Autor removido com sucesso \n"))
 }
