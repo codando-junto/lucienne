@@ -20,13 +20,18 @@ var (
 
 	// ErrAuthorNameCannotBeEmpty é retornado quando uma tentativa de criar ou atualizar um autor com nome vazio é feita.
 	ErrAuthorNameCannotBeEmpty = errors.New("o nome do autor não pode ser vazio")
+
+	// ErrAuthorHasBooks é retornado ao tentar remover um autor que possui livros associados.
+	ErrAuthorHasBooks = errors.New("não é possível remover um autor que possui livros associados")
 )
 
 const (
 	// Não precisamos retornar o ID por enquanto, então usamos um INSERT simples.
-	createAuthorQuery  = `INSERT INTO authors (name) VALUES ($1)`
-	updateAuthorQuery  = `UPDATE authors SET name = $1 WHERE id = $2`
-	getAuthorByIDQuery = `SELECT id, name FROM authors WHERE id = $1`
+	createAuthorQuery         = `INSERT INTO authors (name) VALUES ($1)`
+	updateAuthorQuery         = `UPDATE authors SET name = $1 WHERE id = $2`
+	getAuthorByIDQuery        = `SELECT id, name FROM authors WHERE id = $1`
+	countBooksByAuthorIDQuery = `SELECT COUNT(*) FROM books WHERE author_id = $1`
+	removeAuthorByIDQuery     = `DELETE FROM authors WHERE id = $1`
 )
 
 // AuthorRepository define a interface para as operações de autor no banco de dados.
@@ -34,6 +39,7 @@ type AuthorRepository interface {
 	CreateAuthor(ctx context.Context, author *domain.Author) error
 	UpdateAuthor(ctx context.Context, id int, name string) error
 	GetAuthorByID(ctx context.Context, id int64) (*domain.Author, error)
+	RemoveAuthor(ctx context.Context, id int64) error
 }
 
 // PostgresAuthorRepository é a implementação do AuthorRepository para o PostgreSQL.
@@ -99,4 +105,37 @@ func (r *PostgresAuthorRepository) UpdateAuthor(ctx context.Context, id int, nam
 		return ErrAuthorNotFound
 	}
 	return nil
+}
+
+// RemoveAuthor remove um autor do banco de dados, mas somente se ele não tiver livros associados.
+func (r *PostgresAuthorRepository) RemoveAuthor(ctx context.Context, id int64) error {
+	tx, err := database.Conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback(ctx)
+
+	// Verifica se o autor possui livros associados
+	var bookCount int
+	err = tx.QueryRow(ctx, countBooksByAuthorIDQuery, id).Scan(&bookCount)
+	if err != nil {
+		return err
+	}
+
+	if bookCount > 0 {
+		return ErrAuthorHasBooks
+	}
+
+	// Não havendo livros, prosseguir com a remoção do autor.
+	res, err := tx.Exec(ctx, removeAuthorByIDQuery, id)
+	if err != nil {
+		return err
+	}
+
+	if res.RowsAffected() == 0 {
+		return ErrAuthorNotFound
+	}
+
+	return tx.Commit(ctx)
 }
