@@ -22,7 +22,7 @@ var (
 	ErrAuthorNameCannotBeEmpty = errors.New("o nome do autor não pode ser vazio")
 
 	// ErrAuthorHasBooks é retornado ao tentar remover um autor que possui livros associados.
-	ErrAuthorHasBooks = errors.New("não é possível remover um autor que possui livros associados")
+	ErrAuthorHasBooks = errors.New("autor possui livros associados")
 )
 
 const (
@@ -116,20 +116,12 @@ func (r *PostgresAuthorRepository) RemoveAuthor(ctx context.Context, id int64) e
 
 	defer tx.Rollback(ctx)
 
-	// Verifica se o autor possui livros associados
-	var bookCount int
-	err = tx.QueryRow(ctx, countBooksByAuthorIDQuery, id).Scan(&bookCount)
-	if err != nil {
-		return err
-	}
-
-	if bookCount > 0 {
-		return ErrAuthorHasBooks
-	}
-
-	// Não havendo livros, prosseguir com a remoção do autor.
 	res, err := tx.Exec(ctx, removeAuthorByIDQuery, id)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23503" {
+			return ErrAuthorHasBooks
+		}
 		return err
 	}
 
