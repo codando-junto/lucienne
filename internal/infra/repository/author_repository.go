@@ -108,14 +108,7 @@ func (r *PostgresAuthorRepository) UpdateAuthor(ctx context.Context, id int, nam
 
 // RemoveAuthor remove um autor do banco de dados, mas somente se ele não tiver livros associados.
 func (r *PostgresAuthorRepository) RemoveAuthor(ctx context.Context, id int64) error {
-	tx, err := database.Conn.Begin(ctx)
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback(ctx)
-
-	res, err := tx.Exec(ctx, removeAuthorByIDQuery, id)
+	res, err := database.Conn.Exec(ctx, removeAuthorByIDQuery, id)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23503" {
@@ -128,5 +121,5 @@ func (r *PostgresAuthorRepository) RemoveAuthor(ctx context.Context, id int64) e
 		return ErrAuthorNotFound
 	}
 
-	return tx.Commit(ctx)
+	return nil
 }
