@@ -6,6 +6,7 @@ import (
 	"lucienne/internal/infra/database"
 	"lucienne/internal/infra/repository"
 	"testing"
+	"time"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -160,15 +161,27 @@ func TestPostgresAuthorRepository_RemoveAuthor(t *testing.T) {
 			database.Conn.Exec(ctx, deleteQuery, authorID)
 		})
 
-		_, err = database.Conn.Exec(ctx, insertBookQuery, "Livro do Autor", authorID)
-		if err != nil {
-			t.Fatalf("Falha ao inserir livro para o teste: %v", err)
-		}
+		doneCh := make(chan struct{})
+		var removeErr error
+		go func() {
+			removeErr = repo.RemoveAuthor(ctx, authorID)
+			close(doneCh)
+		}()
 
-		err = repo.RemoveAuthor(ctx, authorID)
+		go func() {
+			time.Sleep(time.Second)
+			_, err := database.Conn.Exec(ctx, insertBookQuery, "Livro do Autor", authorID)
+			if err != nil {
+				t.Errorf("Falha ao inserir livro para o teste: %v", err)
+			} else {
+				t.Log("inseriu livro")
+			}
+		}()
 
-		if !errors.Is(err, repository.ErrAuthorHasBooks) {
-			t.Errorf("esperava erro ErrAuthorHasBooks, mas obteve: %v", err)
+		<-doneCh
+
+		if !errors.Is(removeErr, repository.ErrAuthorHasBooks) {
+			t.Errorf("esperava erro ErrAuthorHasBooks, mas obteve: %v", removeErr)
 		}
 
 		var name string

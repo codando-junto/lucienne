@@ -6,6 +6,7 @@ import (
 	"lucienne/internal/domain"
 	"lucienne/internal/infra/database"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -126,6 +127,8 @@ func (r *PostgresAuthorRepository) RemoveAuthor(ctx context.Context, id int64) e
 	if bookCount > 0 {
 		return ErrAuthorHasBooks
 	}
+
+	time.Sleep(2 * time.Second)
 
 	// Não havendo livros, prosseguir com a remoção do autor.
 	res, err := tx.Exec(ctx, removeAuthorByIDQuery, id)
