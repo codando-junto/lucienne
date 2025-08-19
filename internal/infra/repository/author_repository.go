@@ -27,11 +27,10 @@ var (
 
 const (
 	// Não precisamos retornar o ID por enquanto, então usamos um INSERT simples.
-	createAuthorQuery         = `INSERT INTO authors (name) VALUES ($1)`
-	updateAuthorQuery         = `UPDATE authors SET name = $1 WHERE id = $2`
-	getAuthorByIDQuery        = `SELECT id, name FROM authors WHERE id = $1`
-	countBooksByAuthorIDQuery = `SELECT COUNT(*) FROM books WHERE author_id = $1`
-	removeAuthorByIDQuery     = `DELETE FROM authors WHERE id = $1`
+	createAuthorQuery     = `INSERT INTO authors (name) VALUES ($1)`
+	updateAuthorQuery     = `UPDATE authors SET name = $1 WHERE id = $2`
+	getAuthorByIDQuery    = `SELECT id, name FROM authors WHERE id = $1`
+	removeAuthorByIDQuery = `DELETE FROM authors WHERE id = $1`
 )
 
 // AuthorRepository define a interface para as operações de autor no banco de dados.
