@@ -161,7 +161,7 @@ func (h *AuthorHandler) RemoveAuthor(w http.ResponseWriter, r *http.Request) {
 	err = h.repo.RemoveAuthor(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, repository.ErrAuthorHasBooks) {
-			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+			http.Error(w, "Autor possui livros associados", http.StatusUnprocessableEntity)
 			return
 		}
 		if errors.Is(err, repository.ErrAuthorNotFound) {
