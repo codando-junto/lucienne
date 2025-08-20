@@ -20,6 +20,15 @@ type MockAuthorRepository struct {
 	CreateAuthorFunc  func(ctx context.Context, author *domain.Author) error
 	UpdateAuthorFunc  func(ctx context.Context, id int, name string) error
 	GetAuthorByIDFunc func(ctx context.Context, id int64) (*domain.Author, error)
+	RemoveAuthorFunc  func(ctx context.Context, id int64) error
+}
+
+// RemoveAuthor implements repository.AuthorRepository.
+func (m *MockAuthorRepository) RemoveAuthor(ctx context.Context, id int64) error {
+	if m.RemoveAuthorFunc != nil {
+		return m.RemoveAuthorFunc(ctx, id)
+	}
+	return nil
 }
 
 // CreateAuthor implementa a interface repository.AuthorRepository.
@@ -335,4 +344,86 @@ func TestEditAuthorHandler(t *testing.T) {
 			t.Errorf("esperava mensagem de erro ao buscar autor, obteve: %q", rr.Body.String())
 		}
 	})
+}
+
+func TestRemoveAuthorHandler(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		authorID             string
+		mockRepo             *MockAuthorRepository
+		expectedStatusCode   int
+		expectedBodyContains string
+	}{
+		{
+			name:     "deve remover um autor com sucesso",
+			authorID: "1",
+			mockRepo: &MockAuthorRepository{
+				RemoveAuthorFunc: func(ctx context.Context, id int64) error {
+					return nil
+				},
+			},
+			expectedStatusCode:   http.StatusOK,
+			expectedBodyContains: "Autor removido com sucesso \n",
+		},
+		{
+			name:     "deve retornar 422 se o autor tiver livros",
+			authorID: "2",
+			mockRepo: &MockAuthorRepository{
+				RemoveAuthorFunc: func(ctx context.Context, id int64) error {
+					return repository.ErrAuthorHasBooks
+				},
+			},
+			expectedStatusCode:   http.StatusUnprocessableEntity,
+			expectedBodyContains: repository.ErrAuthorHasBooks.Error(),
+		},
+		{
+			name:     "deve retornar 404 se o autor não for encontrado",
+			authorID: "999",
+			mockRepo: &MockAuthorRepository{
+				RemoveAuthorFunc: func(ctx context.Context, id int64) error {
+					return repository.ErrAuthorNotFound
+				},
+			},
+			expectedStatusCode:   http.StatusNotFound,
+			expectedBodyContains: "Autor não encontrado",
+		},
+		{
+			name:                 "deve retornar 400 se o ID for inválido",
+			authorID:             "abc",
+			mockRepo:             &MockAuthorRepository{},
+			expectedStatusCode:   http.StatusBadRequest,
+			expectedBodyContains: "ID inválido",
+		},
+		{
+			name:     "deve retornar 500 em caso de erro genérico do repositório",
+			authorID: "3",
+			mockRepo: &MockAuthorRepository{
+				RemoveAuthorFunc: func(ctx context.Context, id int64) error {
+					return errors.New("falha de conexão com o banco")
+				},
+			},
+			expectedStatusCode:   http.StatusInternalServerError,
+			expectedBodyContains: "Erro interno ao remover autor",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			handler := NewAuthorHandler(tc.mockRepo)
+			req := httptest.NewRequest("DELETE", fmt.Sprintf("/authors/%s", tc.authorID), nil)
+			rr := httptest.NewRecorder()
+
+			router := mux.NewRouter()
+			router.HandleFunc("/authors/{id}", handler.RemoveAuthor)
+			router.ServeHTTP(rr, req)
+
+			if status := rr.Code; status != tc.expectedStatusCode {
+				t.Errorf("handler retornou status code errado: got %v want %v", status, tc.expectedStatusCode)
+			}
+
+			if !strings.Contains(rr.Body.String(), tc.expectedBodyContains) {
+				t.Errorf("handler retornou corpo inesperado: got %q want to contain %q", rr.Body.String(), tc.expectedBodyContains)
+			}
+		})
+	}
 }

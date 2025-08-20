@@ -9,12 +9,14 @@ import (
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jackc/pgx/v5"
 )
 
 const (
-	insertQuery = "INSERT INTO authors (name) VALUES ($1) RETURNING id"
-	deleteQuery = "DELETE FROM authors WHERE id = $1"
-	selectQuery = "SELECT name FROM authors WHERE id = $1"
+	insertQuery     = "INSERT INTO authors (name) VALUES ($1) RETURNING id"
+	deleteQuery     = "DELETE FROM authors WHERE id = $1"
+	selectQuery     = "SELECT name FROM authors WHERE id = $1"
+	insertBookQuery = "INSERT INTO books (name, author_id) VALUES ($1, $2)"
 )
 
 func TestPostgresAuthorRepository_UpdateAuthor(t *testing.T) {
@@ -118,6 +120,71 @@ func TestPostgresAuthorRepository_UpdateAuthor(t *testing.T) {
 		err = repo.UpdateAuthor(ctx, authorID, "   ")
 		if !errors.Is(err, repository.ErrAuthorNameCannotBeEmpty) {
 			t.Errorf("esperava erro ErrAuthorNameCannotBeEmpty, mas obteve: %v", err)
+		}
+	})
+}
+
+func TestPostgresAuthorRepository_RemoveAuthor(t *testing.T) {
+	setupTestDBAndMigrate(t)
+	ctx := context.Background()
+	repo := repository.NewPostgresAuthorRepository()
+
+	// -- Caso de Sucesso: Remover autor sem livros --
+	t.Run("deve remover um autor sem livros com sucesso", func(t *testing.T) {
+		var authorID int64
+		err := database.Conn.QueryRow(ctx, insertQuery, "Autor Para Ser Removido").Scan(&authorID)
+		if err != nil {
+			t.Fatalf("Falha ao inserir autor para o teste de remoção: %v", err)
+		}
+
+		err = repo.RemoveAuthor(ctx, authorID)
+		if err != nil {
+			t.Errorf("esperava sucesso na remoção, mas obteve erro: %v", err)
+		}
+
+		var name string
+		err = database.Conn.QueryRow(ctx, selectQuery, authorID).Scan(&name)
+		if !errors.Is(err, pgx.ErrNoRows) {
+			t.Errorf("esperava erro pgx.ErrNoRows ao buscar autor removido, mas obteve: %v", err)
+		}
+	})
+
+	// -- Caso de Falha: Autor com livros associados --
+	t.Run("deve retornar ErrAuthorHasBooks se o autor tiver livros", func(t *testing.T) {
+		var authorID int64
+		err := database.Conn.QueryRow(ctx, insertQuery, "Autor Com Livro").Scan(&authorID)
+		if err != nil {
+			t.Fatalf("Falha ao inserir autor para o teste: %v", err)
+		}
+		t.Cleanup(func() {
+			database.Conn.Exec(ctx, deleteQuery, authorID)
+		})
+
+		_, err = database.Conn.Exec(ctx, insertBookQuery, "Livro do Autor", authorID)
+		if err != nil {
+			t.Fatalf("Falha ao inserir livro para o teste: %v", err)
+		}
+
+		err = repo.RemoveAuthor(ctx, authorID)
+
+		if !errors.Is(err, repository.ErrAuthorHasBooks) {
+			t.Errorf("esperava erro ErrAuthorHasBooks, mas obteve: %v", err)
+		}
+
+		var name string
+		err = database.Conn.QueryRow(ctx, selectQuery, authorID).Scan(&name)
+		if err != nil {
+			t.Errorf("não esperava erro ao buscar autor que não deveria ter sido removido, mas obteve: %v", err)
+		}
+	})
+
+	// -- Caso de Falha: Autor não encontrado --
+	t.Run("deve retornar ErrAuthorNotFound se o autor não existir", func(t *testing.T) {
+		nonExistentID := int64(-999)
+		err := repo.RemoveAuthor(ctx, nonExistentID)
+
+		if !errors.Is(err, repository.ErrAuthorNotFound) {
+			t.Errorf("esperava erro ErrAuthorNotFound, mas obteve: %v", err)
 		}
 	})
 }
