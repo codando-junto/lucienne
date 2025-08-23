@@ -6,6 +6,7 @@ import (
 	"log"
 	"lucienne/internal/domain"
 	"lucienne/internal/infra/repository"
+	"lucienne/pkg/renderer"
 	"net/http"
 	"strings"
 
@@ -24,8 +25,8 @@ func NewPublisherHandler(repo repository.PublisherRepository) *PublisherHandler 
 
 // DefinePublishers registra as rotas de publisher no roteador.
 func (h *PublisherHandler) DefinePublishers(router *mux.Router) {
-	publishersRouter := router.PathPrefix("/publishers").Subrouter()
-	publishersRouter.HandleFunc("", h.CreatePublisherHandler).Methods("POST")
+	router.HandleFunc("/publishers", h.CreatePublisherHandler).Methods("POST")
+	router.HandleFunc("/publishers/new", h.NewPublisherForm).Methods("GET")
 }
 
 func (h *PublisherHandler) CreatePublisherHandler(w http.ResponseWriter, r *http.Request) {
@@ -64,4 +65,16 @@ func (h *PublisherHandler) CreatePublisherHandler(w http.ResponseWriter, r *http
 	w.WriteHeader(http.StatusCreated)
 	responseMessage := fmt.Sprintf("Editora criada com sucesso: %s", name)
 	w.Write([]byte(responseMessage))
+}
+
+func (h *PublisherHandler) NewPublisherForm(w http.ResponseWriter, r *http.Request) {
+	page, err := renderer.HTML.Render("publishers/new.html", nil)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Ocorreu um erro ao renderizar a página"))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(page)
 }
