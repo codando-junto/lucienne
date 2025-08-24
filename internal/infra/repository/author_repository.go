@@ -44,6 +44,7 @@ type AuthorRepository interface {
 	UpdateAuthor(ctx context.Context, id int, name string) error
 	GetAuthorByID(ctx context.Context, id int64) (*domain.Author, error)
 	RemoveAuthor(ctx context.Context, id int64) error
+	GetAuthors(ctx context.Context) ([]domain.Author, error)
 }
 
 // PostgresAuthorRepository é a implementação do AuthorRepository para o PostgreSQL.
