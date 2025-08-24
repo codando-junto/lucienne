@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"lucienne/internal/domain"
 	"lucienne/internal/infra/database"
 	"strings"
@@ -23,6 +24,9 @@ var (
 
 	// ErrAuthorHasBooks é retornado ao tentar remover um autor que possui livros associados.
 	ErrAuthorHasBooks = errors.New("autor possui livros associados")
+
+	// ErrSearchAuthors é retornado quando não há autores cadastrados
+	ErrSearchAuthors = errors.New("error searching for authors")
 )
 
 const (
@@ -31,6 +35,7 @@ const (
 	updateAuthorQuery     = `UPDATE authors SET name = $1 WHERE id = $2`
 	getAuthorByIDQuery    = `SELECT id, name FROM authors WHERE id = $1`
 	removeAuthorByIDQuery = `DELETE FROM authors WHERE id = $1`
+	getAuthorsQuery       = `SELECT id, name FROM authors ORDER BY name ASC`
 )
 
 // AuthorRepository define a interface para as operações de autor no banco de dados.
@@ -49,6 +54,25 @@ type PostgresAuthorRepository struct {
 // NewPostgresAuthorRepository cria uma nova instância do repositório.
 func NewPostgresAuthorRepository() *PostgresAuthorRepository {
 	return &PostgresAuthorRepository{}
+}
+
+func (r *PostgresAuthorRepository) GetAuthors(ctx context.Context) ([]domain.Author, error) {
+	rows, err := database.Conn.Query(ctx, getAuthorsQuery)
+	if err != nil {
+		return nil, ErrSearchAuthors
+	}
+
+	// 'defer' é uma palavra especial em go. ela agenda o comando 'rows.Close()'
+	// para ser executado no final da função. Isso garante que a conexão com o
+	// banco seja sempre liberada
+	defer rows.Close()
+
+	authors, err := pgx.CollectRows(rows, pgx.RowToStructByName[domain.Author])
+	if err != nil {
+		return nil, fmt.Errorf("error mapping authors: %w", err)
+	}
+	return authors, nil
+
 }
 
 // GetAuthorByID busca um autor pelo ID.
