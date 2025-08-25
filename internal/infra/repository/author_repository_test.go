@@ -19,6 +19,64 @@ const (
 	insertBookQuery = "INSERT INTO books (name, author_id) VALUES ($1, $2)"
 )
 
+func TestPostgresAuthorRepository_GetAuthors(t *testing.T) {
+	setupTestDBAndMigrate(t)
+	ctx := context.Background()
+	repo := repository.NewPostgresAuthorRepository()
+
+	// Limpa a tabela antes de começar para garantir um estado limpo.
+	_, err := database.Conn.Exec(ctx, "DELETE FROM authors")
+	if err != nil {
+		t.Fatalf("Failed to clean authors table: %v", err)
+	}
+
+	// Caso de teste: Tabela Vazia
+	t.Run("deve retornar uma lista vazia para uma tabela vazia", func(t *testing.T) {
+		authors, err := repo.GetAuthors(ctx)
+		if err != nil {
+			t.Fatalf("GetAuthors returned an unexpected error: %v", err)
+		}
+		if len(authors) != 0 {
+			t.Fatalf("expected 0 authors, but got %d", len(authors))
+		}
+	})
+
+	// Caso de teste: Testa onde existem autores na tabela
+	t.Run("deve retornar uma lista de autores com sucesso", func(t *testing.T) {
+		// Insere autores para teste.
+		var author1ID, author2ID int
+		err := database.Conn.QueryRow(ctx, insertQuery, "Author A").Scan(&author1ID)
+		if err != nil {
+			t.Fatalf("Failed to insert author A: %v", err)
+		}
+		err = database.Conn.QueryRow(ctx, insertQuery, "Author B").Scan(&author2ID)
+		if err != nil {
+			t.Fatalf("Failed to insert author B: %v", err)
+		}
+
+		t.Cleanup(func() {
+			database.Conn.Exec(ctx, deleteQuery, author1ID)
+			database.Conn.Exec(ctx, deleteQuery, author2ID)
+		})
+
+		// Chama a função que está sendo testada.
+		authors, err := repo.GetAuthors(ctx)
+		if err != nil {
+			t.Fatalf("GetAuthors returned an unexpected error: %v", err)
+		}
+
+		// Verifica se o número correto de autores foi retornado.
+		if len(authors) != 2 {
+			t.Fatalf("expected 2 authors, but got %d", len(authors))
+		}
+
+		// A query ordena por nome, então "Autor A" deve vir primeiro.
+		if authors[0].Name != "Author A" || authors[1].Name != "Author B" {
+			t.Errorf("authors returned in wrong order or with incorrect names: got %+v", authors)
+		}
+	})
+}
+
 func TestPostgresAuthorRepository_UpdateAuthor(t *testing.T) {
 	setupTestDBAndMigrate(t)
 	ctx := context.Background()

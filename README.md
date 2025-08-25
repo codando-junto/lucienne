@@ -59,6 +59,17 @@ Para executar todos os testes unitários do projeto, use o comando:
 ```bash
 go test -v ./...
 
+### Testando a Rota GET /authors
+
+Descrição: A rota `/authors` retorna uma página HTML com a lista de todos os autores cadastrados.
+
+**Exemplo de uso (Navegador ou cURL):**
+
+```bash
+curl http://localhost:9090/authors
+```
+*   **Resposta esperada (Status `200 OK`):** Uma página HTML contendo a tabela de autores.
+
 ### Testando a Rota POST /authors
 
 Descrição: A rota /authors permite a criação de um novo autor. Para isso, você deve enviar dados de formulário (`application/x-www-form-urlencoded`) com o campo name.

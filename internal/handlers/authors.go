@@ -26,11 +26,32 @@ func NewAuthorHandler(repo repository.AuthorRepository) *AuthorHandler {
 
 // DefineAuthors registra as rotas de autor no roteador.
 func (h *AuthorHandler) DefineAuthors(router *mux.Router) {
+	router.HandleFunc("/authors", h.ListAuthors).Methods("GET")
 	router.HandleFunc("/authors/new", h.NewAuthorForm).Methods("GET")
 	router.HandleFunc("/authors/{id}/edit", h.EditAuthor).Methods("GET")
 	router.HandleFunc("/authors/{id}", h.UpdateAuthor).Methods("PUT", "POST")
 	router.HandleFunc("/authors", h.CreateAuthorHandler).Methods("POST")
 	router.HandleFunc("/authors/{id}", h.RemoveAuthor).Methods("DELETE")
+}
+
+// ListAuthors exibe a lista de todos os autores.
+func (h *AuthorHandler) ListAuthors(w http.ResponseWriter, r *http.Request) {
+	authors, err := h.repo.GetAuthors(r.Context())
+	if err != nil {
+		log.Printf("Erro inesperado ao listar autores: %v", err)
+		http.Error(w, "Erro interno ao listar autores", http.StatusInternalServerError)
+		return
+	}
+
+	page, err := renderer.HTML.Render("authors/index.html", map[string]interface{}{
+		"Authors": authors,
+	})
+	if err != nil {
+		http.Error(w, "Erro ao renderizar a página", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(page)
 }
 
 // EditAuthor exibe o formulário de edição de autor com dados preenchidos.
