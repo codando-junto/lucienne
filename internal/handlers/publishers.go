@@ -70,8 +70,7 @@ func (h *PublisherHandler) CreatePublisherHandler(w http.ResponseWriter, r *http
 func (h *PublisherHandler) NewPublisherForm(w http.ResponseWriter, r *http.Request) {
 	page, err := renderer.HTML.Render("publishers/new.html", nil)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Ocorreu um erro ao renderizar a página"))
+		http.Error(w, "Erro ao renderizar a página", http.StatusInternalServerError)
 		return
 	}
 
