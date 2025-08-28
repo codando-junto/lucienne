@@ -374,7 +374,7 @@ func TestRemoveAuthorHandler(t *testing.T) {
 				},
 			},
 			expectedStatusCode:   http.StatusUnprocessableEntity,
-			expectedBodyContains: repository.ErrAuthorHasBooks.Error(),
+			expectedBodyContains: "Autor possui livros associados\n",
 		},
 		{
 			name:     "deve retornar 404 se o autor não for encontrado",
@@ -418,11 +418,11 @@ func TestRemoveAuthorHandler(t *testing.T) {
 			router.ServeHTTP(rr, req)
 
 			if status := rr.Code; status != tc.expectedStatusCode {
-				t.Errorf("handler retornou status code errado: got %v want %v", status, tc.expectedStatusCode)
+				t.Errorf("handler retornou status code errado: recebeu: %v | esperado: %v", status, tc.expectedStatusCode)
 			}
 
 			if !strings.Contains(rr.Body.String(), tc.expectedBodyContains) {
-				t.Errorf("handler retornou corpo inesperado: got %q want to contain %q", rr.Body.String(), tc.expectedBodyContains)
+				t.Errorf("handler retornou corpo inesperado: recebeu: %q | esperado: %q", rr.Body.String(), tc.expectedBodyContains)
 			}
 		})
 	}
