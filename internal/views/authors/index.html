@@ -7,8 +7,6 @@
 </head>
 <body>
     <h3>Autores Cadastrados</h3>
-    <a href="/authors/new">Novo Autor</a>
-    <hr>
 
     <table>
         <thead>
@@ -19,7 +17,7 @@
             </tr>
         </thead>
         <tbody>
-            {{if .Authors}}
+
                 {{range .Authors}}
                 <tr>
                     <td>{{.ID}}</td>
@@ -28,7 +26,6 @@
                         <a href="/authors/{{.ID}}/edit">Editar</a>
                     </td>
                 </tr>
-                {{end}}
             {{else}}
                 <tr>
                     <td colspan="3">Nenhum autor encontrado</td>
@@ -36,5 +33,7 @@
             {{end}}
         </tbody>
     </table>
+    <hr>
+            <a href="/authors/new">Novo Autor</a>
 </body>
 </html>

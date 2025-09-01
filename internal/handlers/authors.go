@@ -19,6 +19,10 @@ type AuthorHandler struct {
 	repo repository.AuthorRepository
 }
 
+type AuthorsPageData struct {
+	Authors []domain.Author
+}
+
 // NewAuthorHandler cria uma nova instância do AuthorHandler com suas dependências.
 func NewAuthorHandler(repo repository.AuthorRepository) *AuthorHandler {
 	return &AuthorHandler{repo: repo}
@@ -43,9 +47,11 @@ func (h *AuthorHandler) ListAuthors(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page, err := renderer.HTML.Render("authors/index.html", map[string]interface{}{
-		"Authors": authors,
-	})
+	data := AuthorsPageData{
+		Authors: authors,
+	}
+
+	page, err := renderer.HTML.Render("authors/index.html", data)
 	if err != nil {
 		http.Error(w, "Erro ao renderizar a página", http.StatusInternalServerError)
 		return

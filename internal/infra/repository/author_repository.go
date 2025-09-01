@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"errors"
-	"fmt"
 	"lucienne/internal/domain"
 	"lucienne/internal/infra/database"
 	"strings"
@@ -25,8 +24,8 @@ var (
 	// ErrAuthorHasBooks é retornado ao tentar remover um autor que possui livros associados.
 	ErrAuthorHasBooks = errors.New("autor possui livros associados")
 
-	// ErrSearchAuthors é retornado quando não há autores cadastrados
-	ErrSearchAuthors = errors.New("error searching for authors")
+	// ErrSearchAuthors é retornado quando ocorre uma falha ao buscar os autores no banco de dados.
+	ErrSearchAuthors = errors.New("erro ao buscar autores")
 )
 
 const (
@@ -63,14 +62,9 @@ func (r *PostgresAuthorRepository) GetAuthors(ctx context.Context) ([]domain.Aut
 		return nil, ErrSearchAuthors
 	}
 
-	// 'defer' é uma palavra especial em go. ela agenda o comando 'rows.Close()'
-	// para ser executado no final da função. Isso garante que a conexão com o
-	// banco seja sempre liberada
-	defer rows.Close()
-
 	authors, err := pgx.CollectRows(rows, pgx.RowToStructByName[domain.Author])
 	if err != nil {
-		return nil, fmt.Errorf("error mapping authors: %w", err)
+		return nil, ErrSearchAuthors
 	}
 	return authors, nil
 
