@@ -21,6 +21,15 @@ type MockAuthorRepository struct {
 	UpdateAuthorFunc  func(ctx context.Context, id int, name string) error
 	GetAuthorByIDFunc func(ctx context.Context, id int64) (*domain.Author, error)
 	RemoveAuthorFunc  func(ctx context.Context, id int64) error
+	GetAuthorsFunc    func(ctx context.Context) ([]domain.Author, error)
+}
+
+// GetAuthors implementa a interface repository.AuthorRepository.
+func (m *MockAuthorRepository) GetAuthors(ctx context.Context) ([]domain.Author, error) {
+	if m.GetAuthorsFunc != nil {
+		return m.GetAuthorsFunc(ctx)
+	}
+	return nil, nil
 }
 
 // RemoveAuthor implements repository.AuthorRepository.
@@ -79,6 +88,73 @@ func TestNewAuthorForm(t *testing.T) {
 			t.Errorf("handler retornou corpo inesperado: got %q want to contain %q", rr.Body.String(), expectedBody)
 		}
 	})
+}
+
+func TestListAuthors(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		mockRepo             *MockAuthorRepository
+		expectedStatusCode   int
+		expectedBodyContains []string
+	}{
+		{
+			name: "deve listar autores com sucesso",
+			mockRepo: &MockAuthorRepository{
+				GetAuthorsFunc: func(ctx context.Context) ([]domain.Author, error) {
+					return []domain.Author{
+						{ID: 1, Name: "Autor 1"},
+						{ID: 2, Name: "Autor 2"},
+					}, nil
+				},
+			},
+			expectedStatusCode:   http.StatusOK,
+			expectedBodyContains: []string{"Autor 1", "Autor 2"},
+		},
+		{
+			name: "deve retornar 500 se o repositório falhar ao listar autores",
+			mockRepo: &MockAuthorRepository{
+				GetAuthorsFunc: func(ctx context.Context) ([]domain.Author, error) {
+					return nil, errors.New("falha de conexão com o banco")
+				},
+			},
+			expectedStatusCode:   http.StatusInternalServerError,
+			expectedBodyContains: []string{"Erro interno ao listar autores"},
+		},
+		{
+			name: "deve exibir mensagem apropriada quando não houver autores",
+			mockRepo: &MockAuthorRepository{
+				GetAuthorsFunc: func(ctx context.Context) ([]domain.Author, error) {
+					return []domain.Author{}, nil
+				},
+			},
+			expectedStatusCode: http.StatusOK,
+			// Esta asserção depende do conteúdo de `authors/index.html`.
+			expectedBodyContains: []string{"Nenhum autor encontrado"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			handler := NewAuthorHandler(tc.mockRepo)
+			router := mux.NewRouter()
+			handler.DefineAuthors(router)
+
+			req := httptest.NewRequest("GET", "/authors", nil)
+			rr := httptest.NewRecorder()
+			router.ServeHTTP(rr, req)
+
+			if status := rr.Code; status != tc.expectedStatusCode {
+				t.Errorf("handler retornou status code errado: got %v want %v", status, tc.expectedStatusCode)
+			}
+
+			body := rr.Body.String()
+			for _, expected := range tc.expectedBodyContains {
+				if !strings.Contains(body, expected) {
+					t.Errorf("handler retornou corpo inesperado: got %q want to contain %q", body, expected)
+				}
+			}
+		})
+	}
 }
 
 func TestCreateAuthorHandler(t *testing.T) {

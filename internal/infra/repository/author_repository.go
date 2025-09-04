@@ -23,6 +23,9 @@ var (
 
 	// ErrAuthorHasBooks é retornado ao tentar remover um autor que possui livros associados.
 	ErrAuthorHasBooks = errors.New("autor possui livros associados")
+
+	// ErrSearchAuthors é retornado quando ocorre uma falha ao buscar os autores no banco de dados.
+	ErrSearchAuthors = errors.New("erro ao buscar autores")
 )
 
 const (
@@ -31,6 +34,7 @@ const (
 	updateAuthorQuery     = `UPDATE authors SET name = $1 WHERE id = $2`
 	getAuthorByIDQuery    = `SELECT id, name FROM authors WHERE id = $1`
 	removeAuthorByIDQuery = `DELETE FROM authors WHERE id = $1`
+	getAuthorsQuery       = `SELECT id, name FROM authors ORDER BY name ASC`
 )
 
 // AuthorRepository define a interface para as operações de autor no banco de dados.
@@ -39,6 +43,7 @@ type AuthorRepository interface {
 	UpdateAuthor(ctx context.Context, id int, name string) error
 	GetAuthorByID(ctx context.Context, id int64) (*domain.Author, error)
 	RemoveAuthor(ctx context.Context, id int64) error
+	GetAuthors(ctx context.Context) ([]domain.Author, error)
 }
 
 // PostgresAuthorRepository é a implementação do AuthorRepository para o PostgreSQL.
@@ -49,6 +54,19 @@ type PostgresAuthorRepository struct {
 // NewPostgresAuthorRepository cria uma nova instância do repositório.
 func NewPostgresAuthorRepository() *PostgresAuthorRepository {
 	return &PostgresAuthorRepository{}
+}
+
+func (r *PostgresAuthorRepository) GetAuthors(ctx context.Context) ([]domain.Author, error) {
+	rows, err := database.Conn.Query(ctx, getAuthorsQuery)
+	if err != nil {
+		return nil, ErrSearchAuthors
+	}
+
+	authors, err := pgx.CollectRows(rows, pgx.RowToStructByName[domain.Author])
+	if err != nil {
+		return nil, ErrSearchAuthors
+	}
+	return authors, nil
 }
 
 // GetAuthorByID busca um autor pelo ID.
