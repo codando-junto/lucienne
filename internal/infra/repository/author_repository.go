@@ -67,7 +67,6 @@ func (r *PostgresAuthorRepository) GetAuthors(ctx context.Context) ([]domain.Aut
 		return nil, ErrSearchAuthors
 	}
 	return authors, nil
-
 }
 
 // GetAuthorByID busca um autor pelo ID.
