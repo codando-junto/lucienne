@@ -10,6 +10,8 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/gorilla/mux"
 )
 
 // MockPublisherRepository é a nossa implementação falsa do repositório para testes.
@@ -23,6 +25,32 @@ func (m *MockPublisherRepository) CreatePublisher(ctx context.Context, Publisher
 		return m.CreatePublisherFunc(ctx, Publisher)
 	}
 	return nil
+}
+
+func TestNewPublisherForm(t *testing.T) {
+	handler := NewPublisherHandler(nil)
+	router := mux.NewRouter()
+	handler.DefinePublishers(router)
+
+	req := httptest.NewRequest("GET", "/publishers/new", nil)
+	rr := httptest.NewRecorder()
+
+	router.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler retornou status code errado: got %v want %v", status, http.StatusOK)
+	}
+
+	expectedBody := `<h1>Criar Editora</h1>
+    <form action="/publishers" method="post">
+        <label for="name">Nome</label>
+        <input type="text" id="name" name="name" required>
+        <button type="submit">Criar</button>
+    </form>`
+
+	if !strings.Contains(rr.Body.String(), expectedBody) {
+		t.Errorf("handler retornou corpo inesperado: got %q want %q", rr.Body.String(), expectedBody)
+	}
 }
 
 func TestCreatePublisherHandler(t *testing.T) {
