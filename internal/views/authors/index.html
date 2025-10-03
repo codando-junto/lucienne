@@ -18,20 +18,46 @@
         <tbody>
         {{range .Authors}}
             <tr>
-                <td>{{.ID}}</td>
+                <td class="idAuthor">{{.ID}}</td>
                 <td>{{.Name}}</td>
                 <td>
                     <a href="/authors/{{.ID}}/edit">Editar</a>
+                    <button class="btnRm" data-id="{{.ID}}">Remover</button>
                 </td>
             </tr>
-        {{else}}
+            {{else}}
             <tr>
                 <td colspan="3">Nenhum autor encontrado</td>
             </tr>
-        {{end}}
+            {{end}}
         </tbody>
     </table>
     <hr>
     <a href="/authors/new">Novo Autor</a>
+    <script>
+        function Teste() {
+            const eventButtonClick = document.querySelectorAll(".btnRm");
+
+            eventButtonClick.forEach(button => {
+                button.addEventListener("click", function () {
+                    const id = this.dataset.id;
+                    alert(`Botão clicado » ID: ${id}`);
+                    fetch(`/authors/${id}`, {
+                        method:"DELETE"
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            alert("Autor removido com sucesso");
+                            window.location.reload();
+                        } else {
+                            alert("Não é possivel remover autor com livro(s)");
+                        }
+                    });
+            });
+        });
+        console.log(eventButtonClick);
+        }
+        Teste()
+    </script>
 </body>
 </html>
