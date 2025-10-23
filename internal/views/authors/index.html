@@ -22,6 +22,7 @@
                 <td>{{.Name}}</td>
                 <td>
                     <a href="/authors/{{.ID}}/edit">Editar</a>
+                    <button class="btn-rm" data-id="{{.ID}}">Remover</button>
                 </td>
             </tr>
         {{else}}
@@ -33,5 +34,28 @@
     </table>
     <hr>
     <a href="/authors/new">Novo Autor</a>
+    <script>
+        async function handleClickDeleteAuthor() {
+            const id = this.dataset.id;
+            try {
+                const response = await fetch(`/authors/${id}`, { method:"DELETE" });
+                if (response.ok) {
+                    alert(await response.text());
+                    window.location.reload()
+                } else {
+                    alert(await response.text())
+                }
+            }  catch (error) {
+                alert(error.message);
+            }
+        }
+        (() => {
+            document
+            .querySelectorAll(".btn-rm")
+            .forEach(button => {
+                button.addEventListener("click", handleClickDeleteAuthor);
+            });
+        })();
+    </script>
 </body>
 </html>
