@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Deletar Editora</title>
+</head>
+<body>
+    <h1>Deletar Editora</h1>
+    <form action="/publishers/{{.ID}}" method="delete">
+        <input type="hidden" name="_method" value="delete">
+        <p>Tem certeza que deseja deletar a editora?</p>
+        <button type="submit">Deletar</button>
+    </form>
+</body>
+</html>
